@@ -1,258 +1,132 @@
 import React, { useState, useEffect } from 'react';
+import './feedback.css';
 import { useNavigate } from 'react-router-dom';
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+import { motion } from 'framer-motion';
 
 function Feedback() {
-  const navigate = useNavigate();
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [email, setEmail] = useState('');
-  const [anonymous, setAnonymous] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
-  const [feedbackList, setFeedbackList] = useState([]);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [anonymous, setAnonymous] = useState(false);
+  const [screenshot, setScreenshot] = useState(null);
+  const [category, setCategory] = useState('General');
+  const [sortOption, setSortOption] = useState('newest');
+  const navigate = useNavigate();
 
-  const [searchEmail, setSearchEmail] = useState('');
-  const [filterRating, setFilterRating] = useState('All');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  useEffect(() => {
-    const saved = localStorage.getItem('feedbackList');
-    if (saved) setFeedbackList(JSON.parse(saved));
-  }, []);
-
+  const handleStarClick = (value) => setRating(value);
   const handleSubmit = (e) => {
     e.preventDefault();
-    const newFeedback = {
-      rating,
-      comment,
-      email: anonymous ? 'Anonymous' : email,
-      timestamp: new Date().toLocaleString(),
-    };
-
-    const updated = [newFeedback, ...feedbackList];
-    setFeedbackList(updated);
-    localStorage.setItem('feedbackList', JSON.stringify(updated));
-
+    alert('✅ Feedback submitted!');
     setRating(0);
-    setComment('');
-    setEmail('');
-    setAnonymous(true);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
-  };
-
-  const handleDeleteAll = () => {
-    if (window.confirm('Are you sure you want to delete all feedback?')) {
-      setFeedbackList([]);
-      localStorage.removeItem('feedbackList');
-    }
-  };
-
-  const filteredFeedback = feedbackList.filter((fb) => {
-    const emailMatch = fb.email.toLowerCase().includes(searchEmail.toLowerCase());
-    const ratingMatch = filterRating === 'All' || fb.rating === parseInt(filterRating);
-    return emailMatch && ratingMatch;
-  });
-
-  const indexOfLast = currentPage * itemsPerPage;
-  const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentItems = filteredFeedback.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filteredFeedback.length / itemsPerPage);
-
-  const ratingCounts = [1, 2, 3, 4, 5].map(
-    (r) => feedbackList.filter((fb) => fb.rating === r).length
-  );
-
-  const chartData = {
-    labels: ['1★', '2★', '3★', '4★', '5★'],
-    datasets: [
-      {
-        label: 'Feedback Count',
-        data: ratingCounts,
-        backgroundColor: '#0d6efd',
-        borderRadius: 6,
-      },
-    ],
+    setFeedbackText('');
+    setAnonymous(false);
+    setScreenshot(null);
   };
 
   return (
-    <div className="container py-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="fw-bold text-primary">📝 Feedback</h2>
-        <button className="btn btn-outline-secondary" onClick={() => navigate('/dashboard')}>
-          ⬅ Back
-        </button>
-      </div>
+    <motion.div className="feedback-container"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="feedback-card shadow">
+        <div className="feedback-header bg-primary text-white rounded-top">
+          📝 <strong>Share Your Feedback</strong>
+          <p className="subtext">Your voice helps us improve women's safety.</p>
+        </div>
 
-      <div className="row justify-content-center">
-        <div className="col-xl-10 col-lg-11">
-          {/* Feedback Form */}
-          <div className="card shadow-lg p-4 mb-4 rounded-4 bg-light">
-            {submitted && (
-              <div className="alert alert-success text-center fw-bold fs-5">
-                ✅ Thank you for your feedback!
-              </div>
-            )}
-
-            <h4 className="mb-3">How was your experience?</h4>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-3">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    role="button"
-                    className={`fs-2 me-2 ${star <= rating ? 'text-warning' : 'text-secondary'}`}
-                    onClick={() => setRating(star)}
-                  >
-                    ⭐
-                  </span>
-                ))}
-              </div>
-
-              <div className="mb-3">
-                <textarea
-                  className="form-control fs-5"
-                  rows="5"
-                  placeholder="Write your feedback..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="mb-3">
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="Email (optional)"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={anonymous}
-                />
-              </div>
-
-              <div className="form-check mb-4">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  checked={anonymous}
-                  onChange={() => setAnonymous(!anonymous)}
-                  id="anonCheck"
-                />
-                <label className="form-check-label" htmlFor="anonCheck">
-                  Submit anonymously
-                </label>
-              </div>
-
-              <button className="btn btn-primary w-100 fs-5" type="submit">
-                📤 Submit Feedback
-              </button>
-            </form>
-          </div>
-
-          {/* Filters */}
-          {feedbackList.length > 0 && (
-            <div className="card shadow-sm p-3 mb-4 bg-white rounded-4">
-              <div className="row g-3">
-                <div className="col-md-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Search by email..."
-                    value={searchEmail}
-                    onChange={(e) => setSearchEmail(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3">
-                  <select
-                    className="form-select"
-                    value={filterRating}
-                    onChange={(e) => setFilterRating(e.target.value)}
-                  >
-                    <option value="All">All Ratings</option>
-                    {[5, 4, 3, 2, 1].map((r) => (
-                      <option key={r} value={r}>
-                        {r} Star{r > 1 && 's'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-4 text-end">
-                  <button className="btn btn-danger" onClick={handleDeleteAll}>
-                    🗑️ Delete All Feedback
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Chart */}
-          {feedbackList.length > 0 && (
-            <div className="card mb-4 shadow-sm p-4 bg-white rounded-4">
-              <h5 className="text-center mb-3 text-primary">📊 Rating Chart</h5>
-              <Bar data={chartData} />
-            </div>
-          )}
-
-          {/* Feedback List */}
-          {currentItems.length > 0 && (
-            <div className="card shadow-sm p-3 rounded-4 bg-white">
-              <h5 className="mb-3">📋 Feedback List</h5>
-              {currentItems.map((fb, index) => (
-                <div
-                  key={index}
-                  className="border-bottom pb-3 mb-3"
-                  style={{ borderColor: '#eaeaea' }}
-                >
-                  <div className="mb-1">
-                    <strong>Rating:</strong>{' '}
-                    {[...Array(fb.rating)].map((_, i) => (
-                      <span key={i} className="text-warning">⭐</span>
-                    ))}
-                  </div>
-                  <div className="mb-1">
-                    <strong>Comment:</strong> {fb.comment}
-                  </div>
-                  <div className="mb-1">
-                    <strong>Email:</strong> {fb.email}
-                  </div>
-                  <small className="text-muted">🕒 {fb.timestamp}</small>
-                </div>
+        <form onSubmit={handleSubmit} className="p-4">
+          <div className="mb-3">
+            <label className="form-label fw-bold">Rate Us:</label>
+            <div className="stars">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span
+                  key={i}
+                  onClick={() => handleStarClick(i)}
+                  className={i <= rating ? 'star selected' : 'star'}
+                >★</span>
               ))}
             </div>
-          )}
+          </div>
 
-          {/* Pagination */}
-          {filteredFeedback.length > itemsPerPage && (
-            <nav className="mt-4">
-              <ul className="pagination justify-content-center">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <li
-                    key={i + 1}
-                    className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}
-                  >
-                    <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
-                      {i + 1}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-        </div>
+          <div className="mb-3">
+            <label className="form-label fw-bold">Feedback:</label>
+            <textarea
+              className="form-control"
+              placeholder="Write your feedback..."
+              rows="3"
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="row mb-3">
+            <div className="col-md-6">
+              <label className="form-label fw-bold">Screenshot (optional):</label>
+              <input
+                type="file"
+                className="form-control"
+                accept="image/*"
+                onChange={(e) => setScreenshot(e.target.files[0])}
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label fw-bold">Feedback Category:</label>
+              <select
+                className="form-select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option>General</option>
+                <option>Bug</option>
+                <option>Feature Request</option>
+                <option>UI/UX</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-check mb-3">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="anon"
+              checked={anonymous}
+              onChange={() => setAnonymous(!anonymous)}
+            />
+            <label className="form-check-label" htmlFor="anon">
+              Submit anonymously
+            </label>
+          </div>
+
+          <div className="mb-4">
+            <label className="form-label fw-bold">Sort Feedback By:</label>
+            <select
+              className="form-select"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="high">Rating: High to Low</option>
+              <option value="low">Rating: Low to High</option>
+            </select>
+          </div>
+
+          <div className="d-grid gap-2">
+            <button type="submit" className="btn btn-success">
+              🚀 Submit Feedback
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="btn btn-outline-dark"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

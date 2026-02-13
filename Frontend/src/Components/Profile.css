@@ -1,0 +1,21 @@
+/* Profile.css */
+
+body.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.dark-card {
+    background-color: #1e1e1e;
+    color: #f1f1f1;
+}
+
+.dark-list-item {
+    background-color: #1c1c1c;
+    color: #f1f1f1;
+    border-color: #333;
+}
+
+.dark-list-item:hover {
+    background-color: #2a2a2a;
+}

@@ -1,129 +1,173 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Container, Button } from "react-bootstrap";
 
 function Home() {
   const navigate = useNavigate();
-  const [activeModal, setActiveModal] = useState(null);
-  const [location, setLocation] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
 
-  useEffect(() => {
-    if (activeModal === 'location' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        () => setLocation({ error: 'Location access denied.' })
-      );
-    }
-  }, [activeModal]);
-
-  const handleStartClick = () => {
-    navigate('/login');
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const query = e.target.search.value.toLowerCase();
-    if (query.includes('sos')) navigate('/sos');
-    else if (query.includes('sms')) navigate('/sms');
-    else if (query.includes('track')) navigate('/track');
-    else if (query.includes('helpline')) navigate('/helpline');
-    else alert('No matching feature found.');
+  const theme = {
+    bg: darkMode ? "#0F1117" : "#F7F8FC",
+    card: darkMode ? "#1A1D26" : "#ffffff",
+    soft: darkMode ? "#141720" : "#F0F2F8",
+    text: darkMode ? "#ffffff" : "#111827",
+    sub: darkMode ? "#9CA3AF" : "#6B7280",
+    primary: "#E11D48",
   };
 
   return (
-    <div className="w-100">
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark w-100">
-        <div className="container-fluid px-4">
-          <Link className="navbar-brand" to="/">Women Safety</Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
+    <div
+      style={{
+        backgroundColor: theme.bg,
+        minHeight: "100vh",
+        color: theme.text,
+        transition: "0.3s ease",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          padding: "18px 22px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h6 style={{ margin: 0, fontWeight: "700" }}>SafeHere</h6>
+        <div onClick={() => setDarkMode(!darkMode)} style={{ cursor: "pointer" }}>
+          {darkMode ? "🌞" : "🌙"}
+        </div>
+      </div>
+
+      <Container style={{ paddingBottom: "100px" }}>
+
+        {/* BIG ACTIVATION CARD */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            backgroundColor: theme.card,
+            borderRadius: "28px",
+            padding: "26px",
+            boxShadow: darkMode
+              ? "0 20px 60px rgba(0,0,0,0.6)"
+              : "0 15px 40px rgba(0,0,0,0.08)",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "90px",
+              height: "90px",
+              borderRadius: "50%",
+              backgroundColor: theme.primary,
+              margin: "0 auto 15px auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "28px",
+              color: "white",
+            }}
           >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav ms-auto mb-2 mb-lg-0">
-              <li className="nav-item"><span className="nav-link" onClick={() => setActiveModal(null)}>Home</span></li>
-              <li className="nav-item"><span className="nav-link" onClick={() => setActiveModal('about')}>About</span></li>
-              <li className="nav-item"><span className="nav-link" onClick={() => setActiveModal('location')}>Location</span></li>
-              <li className="nav-item"><span className="nav-link" onClick={() => setActiveModal('help')}>Help</span></li>
-            </ul>
-            <form className="d-flex ms-3" onSubmit={handleSearch}>
-              <input className="form-control me-2" type="search" name="search" placeholder="Search" />
-              <button className="btn btn-outline-light" type="submit">Search</button>
-            </form>
+            🛡️
           </div>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      {!activeModal && (
-        <div className="container-fluid py-5 px-0 mx-0">
-          <div className="row align-items-center g-0">
-            <div className="col-md-6 p-5 text-center text-md-start">
-              <h2><strong>Women Safety</strong> – "SafeHere"</h2>
-              <p className="lead">Your safety, our priority. One tap away from help.</p>
-              <button className="btn btn-primary btn-lg mt-3" onClick={handleStartClick}>Start Up for Free</button>
-            </div>
-            <div className="col-md-6 text-center">
-              <img
-                src="/src/assets/safe-women.jpg"
-                className="img-fluid rounded shadow"
-                alt="Women safety"
-                style={{ maxWidth: '100%', height: 'auto' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          <h5 style={{ fontWeight: "700" }}>
+            Activate Your Safety Network
+          </h5>
 
-      {/* Modal Section */}
-      {activeModal && (
-        <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  {activeModal === 'about' && 'About Women Safety'}
-                  {activeModal === 'location' && 'Your Location'}
-                  {activeModal === 'help' && 'Helpline Numbers'}
-                </h5>
-                <button type="button" className="btn-close" onClick={() => setActiveModal(null)}></button>
-              </div>
-              <div className="modal-body">
-                {activeModal === 'about' && (
-                  <p>
-                    Women safety is a vital issue. This app helps ensure quick access to help,
-                    emergency alerts, and live location sharing for increased safety and peace of mind.
-                  </p>
-                )}
-                {activeModal === 'location' && (
-                  location ? (
-                    location.error ? <p>{location.error}</p> :
-                      <p>Latitude: {location.lat}<br />Longitude: {location.lng}</p>
-                  ) : <p>Fetching location...</p>
-                )}
-                {activeModal === 'help' && (
-                  <ul className="list-group">
-                    <li className="list-group-item"><strong>National Women Helpline:</strong> 1091</li>
-                    <li className="list-group-item"><strong>Police:</strong> 100</li>
-                    <li className="list-group-item"><strong>Child Helpline:</strong> 1098</li>
-                    <li className="list-group-item"><strong>Ambulance:</strong> 108</li>
-                  </ul>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>Close</button>
-              </div>
+          <p style={{ fontSize: "13px", color: theme.sub }}>
+            Enable live tracking & emergency protection instantly.
+          </p>
+
+          <Button
+            onClick={() => navigate("/register")}
+            style={{
+              marginTop: "10px",
+              backgroundColor: theme.primary,
+              border: "none",
+              borderRadius: "20px",
+              padding: "8px 18px",
+            }}
+          >
+            Get Started
+          </Button>
+        </motion.div>
+
+        {/* QUICK ACTIONS HORIZONTAL */}
+        <h6 style={{ marginTop: "35px" }}>Quick Access</h6>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "14px",
+            overflowX: "auto",
+            paddingBottom: "10px",
+            marginTop: "10px",
+          }}
+        >
+          {["Live Location", "Emergency Call", "Nearby Help", "Trusted Contacts"].map((item, i) => (
+            <div
+              key={i}
+              style={{
+                minWidth: "140px",
+                backgroundColor: theme.soft,
+                padding: "14px",
+                borderRadius: "18px",
+                textAlign: "center",
+                fontSize: "13px",
+              }}
+            >
+              {item}
             </div>
-          </div>
+          ))}
         </div>
-      )}
+
+        {/* FEATURE LIST */}
+        <h6 style={{ marginTop: "35px" }}>Features</h6>
+
+        {[
+          "One Tap SOS Alert",
+          "Real-Time Location Tracking",
+          "Guardian Alert System",
+          "Police & Helpline Integration",
+        ].map((item, index) => (
+          <div
+            key={index}
+            style={{
+              marginTop: "12px",
+              padding: "16px",
+              backgroundColor: theme.card,
+              borderRadius: "18px",
+              boxShadow: darkMode
+                ? "0 8px 25px rgba(0,0,0,0.5)"
+                : "0 6px 20px rgba(0,0,0,0.05)",
+            }}
+          >
+            {item}
+          </div>
+        ))}
+
+        {/* TRUST SECTION */}
+        <div
+          style={{
+            marginTop: "40px",
+            padding: "22px",
+            backgroundColor: theme.soft,
+            borderRadius: "24px",
+            textAlign: "center",
+          }}
+        >
+          <h6 style={{ fontWeight: "600" }}>
+            Trusted by 12,000+ Women
+          </h6>
+          <p style={{ fontSize: "13px", color: theme.sub }}>
+            24/7 Monitoring • High Alert Accuracy
+          </p>
+        </div>
+
+      </Container>
     </div>
   );
 }

@@ -1,0 +1,40 @@
+.feedback-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem;
+    background: linear-gradient(to bottom right, #f7f9fc, #e6ecf4);
+  }
+  
+  .feedback-card {
+    width: 100%;
+    max-width: 650px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  
+  .feedback-header {
+    padding: 1.2rem;
+    font-size: 1.4rem;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .subtext {
+    font-size: 0.85rem;
+    margin: 0;
+    opacity: 0.9;
+  }
+  
+  .stars {
+    font-size: 1.6rem;
+    color: #ccc;
+    cursor: pointer;
+  }
+  
+  .stars .selected {
+    color: gold;
+  }
