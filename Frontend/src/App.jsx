@@ -1,21 +1,39 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Home from './Components/Home';
 import Login from './Components/Login';
-import Dashboard from './Components/Dashboard';
-import SOS from './Components/SOS';
-import Contacts from './Components/Contacts';
-import Feedback from './Components/Feedback';
-import Helpline from './Components/Helpline'; // 👈 Add this
-import TrackMe from './Components/TrackMe'; // 👈 Add this import
-import Profile from './Components/profile';
-import Settings from './Components/setting';
-import About from './Components/About';
-import NearbyPolice from './Components/NearbyPolice';
-import SafetyTips from './Components/SafetyTips'
-import EmergencySMS from './Components/EmergencySMS';
-import QuickCall from './Components/QuickCall';
 import Register from './Components/Register';
+
+// Lazy load heavy components (code-splitting for faster initial load)
+const Dashboard = React.lazy(() => import('./Components/Dashboard'));
+const SOS = React.lazy(() => import('./Components/SOS'));
+const Contacts = React.lazy(() => import('./Components/Contacts'));
+const Feedback = React.lazy(() => import('./Components/Feedback'));
+const Helpline = React.lazy(() => import('./Components/Helpline'));
+const TrackMe = React.lazy(() => import('./Components/TrackMe'));
+const Profile = React.lazy(() => import('./Components/Profile'));
+const Settings = React.lazy(() => import('./Components/setting'));
+const About = React.lazy(() => import('./Components/About'));
+const NearbyPolice = React.lazy(() => import('./Components/NearbyPolice'));
+const SafetyTips = React.lazy(() => import('./Components/SafetyTips'));
+const EmergencySMS = React.lazy(() => import('./Components/EmergencySMS'));
+const QuickCall = React.lazy(() => import('./Components/QuickCall'));
+
+// Loading component
+const LoadingFallback = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    background: 'linear-gradient(135deg, #EDE9FE 0%, #F3E8FF 50%, #E0E7FF 100%)',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#5B2EFF'
+  }}>
+    ⏳ Loading...
+  </div>
+);
 
 
 function DashboardWrapper() {
@@ -32,30 +50,28 @@ function DashboardWrapper() {
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<DashboardWrapper />} />
-        <Route path="/sos" element={<SOS />} />
-        <Route path="/contacts" element={<Contacts />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/helpline" element={<Helpline />} /> // 👈 Add this route
-        <Route path="/trackme" element={<TrackMe />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/setting" element={<Settings />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/nearby-police" element={<NearbyPolice />} />
-        <Route path="/safetytips" element={<SafetyTips />} />
-        <Route path="/setting" element={<Settings />} />
-        <Route path="/emergencysms" element={<EmergencySMS />} />
-        <Route path="/quickcall" element={<QuickCall />} />
-
-
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<DashboardWrapper />} />
+          <Route path="/sos" element={<SOS />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/helpline" element={<Helpline />} />
+          <Route path="/trackme" element={<TrackMe />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/nearby-police" element={<NearbyPolice />} />
+          <Route path="/safetytips" element={<SafetyTips />} />
+          <Route path="/emergencysms" element={<EmergencySMS />} />
+          <Route path="/quickcall" element={<QuickCall />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
-  
 }
 
 export default App;

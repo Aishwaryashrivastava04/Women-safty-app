@@ -67,63 +67,36 @@ function Settings() {
       window.location.reload();
     }
   };
-
   return (
-    <div className="container py-5" id="privacy-wrapper">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          <div className="card shadow border-0">
-            <div className="card-header bg-primary text-white rounded-top">
-              <h4 className="mb-0">⚙️ App Settings</h4>
-            </div>
-            <div className="card-body">
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)', fontFamily: "'Inter', system-ui, -apple-system", padding: '24px 0' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 20px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)', color: 'white', padding: '20px 24px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>⚙️ App Settings</div>
+          <div>
+            <button onClick={() => { localStorage.setItem('darkMode', !darkMode); setDarkMode(!darkMode); }} style={{ marginRight: 8, background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', padding: '8px 12px', borderRadius: 10 }}>Toggle Dark</button>
+            <button onClick={() => window.location.reload()} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', padding: '8px 12px', borderRadius: 10 }}>Reload</button>
+          </div>
+        </div>
 
+        <div style={{ marginTop: 18, background: 'white', borderRadius: 16, padding: 24, boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+            <div>
               {/* Location Sharing */}
-              <div className="form-check form-switch mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="locationToggle"
-                  checked={locationSharing}
-                  onChange={() => {
-                    setLocationSharing(!locationSharing);
-                    showMessage(`📍 Location sharing ${!locationSharing ? 'enabled' : 'disabled'}`);
-                  }}
-                />
-                <label className="form-check-label" htmlFor="locationToggle">
-                  Live Location Sharing
-                </label>
-              </div>
+              <SettingRow label="📍 Live Location Sharing" checked={locationSharing} onToggle={() => { setLocationSharing(!locationSharing); showMessage(`📍 Location sharing ${!locationSharing ? 'enabled' : 'disabled'}`); }} />
 
               {/* Notifications */}
-              <div className="mb-3">
-                <label htmlFor="notificationSelect" className="form-label">🔔 Notifications</label>
-                <select
-                  id="notificationSelect"
-                  className="form-select"
-                  value={notifications}
-                  onChange={(e) => {
-                    setNotifications(e.target.value);
-                    showMessage(`🔔 Notifications ${e.target.value}`);
-                  }}
-                >
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>🔔 Notifications</div>
+                <select value={notifications} onChange={(e) => { setNotifications(e.target.value); showMessage(`🔔 Notifications ${e.target.value}`); }} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #E5E7EB' }}>
                   <option value="enabled">Enabled</option>
                   <option value="disabled">Disabled</option>
                 </select>
               </div>
 
               {/* Email Alerts */}
-              <div className="mb-3">
-                <label htmlFor="emailAlert" className="form-label">📧 Email Alerts</label>
-                <select
-                  id="emailAlert"
-                  className="form-select"
-                  value={emailAlerts}
-                  onChange={(e) => {
-                    setEmailAlerts(e.target.value);
-                    showMessage(`📧 Email alerts set to ${e.target.value}`);
-                  }}
-                >
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>📧 Email Alerts</div>
+                <select value={emailAlerts} onChange={(e) => { setEmailAlerts(e.target.value); showMessage(`📧 Email alerts set to ${e.target.value}`); }} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid #E5E7EB' }}>
                   <option value="immediate">Immediate</option>
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -131,92 +104,56 @@ function Settings() {
                 </select>
               </div>
 
-              {/* Privacy Blur */}
-              <div className="form-check form-switch mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="privacyMode"
-                  checked={privacyMode}
-                  onChange={() => {
-                    setPrivacyMode(!privacyMode);
-                    showMessage(`🔒 Privacy mode ${!privacyMode ? 'enabled' : 'disabled'}`);
-                  }}
-                />
-                <label className="form-check-label" htmlFor="privacyMode">
-                  Privacy Mode (Blur Content)
-                </label>
-              </div>
-
-              {/* Dark Mode */}
-              <div className="form-check form-switch mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="darkMode"
-                  checked={darkMode}
-                  onChange={() => {
-                    setDarkMode(!darkMode);
-                    showMessage(`🌙 Dark mode ${!darkMode ? 'enabled' : 'disabled'}`);
-                  }}
-                />
-                <label className="form-check-label" htmlFor="darkMode">
-                  Dark Mode (Global)
-                </label>
-              </div>
+              {/* Auto-SOS */}
+              <SettingRow label="📩 Auto-SOS (Emergency SMS)" checked={autoSOS} onToggle={() => { setAutoSOS(!autoSOS); showMessage(`📩 Auto-SOS ${!autoSOS ? 'enabled' : 'disabled'}`); }} />
 
               {/* Sound Alarm */}
-              <div className="form-check form-switch mb-3">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="soundAlarm"
-                  checked={soundAlarm}
-                  onChange={() => {
-                    setSoundAlarm(!soundAlarm);
-                    showMessage(`🎵 Sound alarm ${!soundAlarm ? 'enabled' : 'disabled'}`);
-                  }}
-                />
-                <label className="form-check-label" htmlFor="soundAlarm">
-                  🎵 Sound Alarm
-                </label>
+              <SettingRow label="🎵 Sound Alarm" checked={soundAlarm} onToggle={() => { setSoundAlarm(!soundAlarm); showMessage(`🎵 Sound alarm ${!soundAlarm ? 'enabled' : 'disabled'}`); }} />
+
+              <div style={{ marginTop: 18, display: 'flex', gap: 12 }}>
+                <button onClick={handleClearData} style={{ background: '#F87171', color: 'white', border: 'none', padding: '10px 16px', borderRadius: 10, fontWeight: 700 }}>🗑️ Clear Local Data</button>
+                <button onClick={() => { localStorage.setItem('privacyMode', String(!privacyMode)); setPrivacyMode(!privacyMode); showMessage(`🔒 Privacy mode ${!privacyMode ? 'enabled' : 'disabled'}`); }} style={{ background: '#F3F4F6', border: 'none', padding: '10px 16px', borderRadius: 10 }}>Toggle Privacy</button>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ padding: 16, borderRadius: 12, background: '#FAFAFF', border: '1px solid #EEF2FF' }}>
+                <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 8 }}>Privacy & Display</div>
+                <div style={{ color: '#6B7280', marginBottom: 12 }}>Use Privacy Mode to blur sensitive information on screen. Dark Mode toggles global theme.</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>Privacy Mode</div>
+                    <div style={{ color: '#6B7280' }}>{privacyMode ? 'Enabled' : 'Disabled'}</div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, marginBottom: 6 }}>Dark Mode</div>
+                    <div style={{ color: '#6B7280' }}>{darkMode ? 'Enabled' : 'Disabled'}</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Auto-SOS */}
-              <div className="form-check form-switch mb-4">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="autoSOS"
-                  checked={autoSOS}
-                  onChange={() => {
-                    setAutoSOS(!autoSOS);
-                    showMessage(`📩 Auto-SOS ${!autoSOS ? 'enabled' : 'disabled'}`);
-                  }}
-                />
-                <label className="form-check-label" htmlFor="autoSOS">
-                  📩 Auto-SOS (Emergency SMS)
-                </label>
+              <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: '#FFFFFF', border: '1px solid #E5E7EB' }}>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Account & Alerts</div>
+                <div style={{ color: '#6B7280' }}>Configure notification preferences and emergency alert behavior.</div>
               </div>
-
-              {/* Clear Local Data */}
-              <div className="text-center">
-                <button className="btn btn-outline-danger" onClick={handleClearData}>
-                  🗑️ Clear All Data
-                </button>
-              </div>
-
-              {/* Status Message */}
-              {statusMsg && (
-                <div className="alert alert-info mt-4 text-center p-2">{statusMsg}</div>
-              )}
-
             </div>
           </div>
+
+          {statusMsg && <div style={{ marginTop: 16, padding: 12, borderRadius: 10, background: '#ECFEFF', color: '#064E3B', fontWeight: 700 }}>{statusMsg}</div>}
         </div>
       </div>
     </div>
   );
 }
 
+function SettingRow({ label, checked, onToggle }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+      <div style={{ fontWeight: 700 }}>{label}</div>
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <input type="checkbox" checked={checked} onChange={onToggle} style={{ width: 40, height: 20 }} />
+      </label>
+    </div>
+  );
+}
 export default Settings;

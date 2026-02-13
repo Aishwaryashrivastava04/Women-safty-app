@@ -19,6 +19,10 @@ function Contacts() {
   const deleteModalRef = useRef(null);
   const navigate = useNavigate();
 
+  const getInitials = (name) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   const isDuplicate = (name, phone) => {
     return contacts.some(
       (c, i) =>

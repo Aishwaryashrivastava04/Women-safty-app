@@ -7,28 +7,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Women Safety App</title>
 
-  <!-- ✅ Bootstrap CSS -->
+  <!-- ✅ Critical CSS (Bootstrap) -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-  <!-- ✅ Leaflet CSS for Maps -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <!-- ✅ Google Fonts: Poppins -->
+  <!-- ✅ Google Fonts: Poppins (preload for faster rendering) -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" as="style" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
-  <!-- ✅ Font Awesome Icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <!-- ✅ Defer non-critical stylesheets -->
+  <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" /></noscript>
+
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" /></noscript>
 </head>
 
 <body style="margin: 0; padding: 0; font-family: 'Poppins', sans-serif;">
   <div id="root"></div>
 
-  <!-- ✅ Vite Script -->
+  <!-- ✅ Vite Script (module) -->
   <script type="module" src="/src/main.jsx"></script>
 
-  <!-- ✅ Bootstrap JS Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  ></script>
+  <!-- ✅ Defer Bootstrap JS (not needed for initial render) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
 </body>
 
 </html>

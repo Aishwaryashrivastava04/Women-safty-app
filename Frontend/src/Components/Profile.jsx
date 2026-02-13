@@ -1,197 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { Tabs, Tab, Card, Button } from 'react-bootstrap';
-import {
-    PencilSquare,
-    GraphUp,
-    BoxArrowRight,
-    CloudUpload,
-    TelephoneFill,
-    Whatsapp,
-    Trash,
-    LockFill,
-    Instagram,
-    Twitter
-} from 'react-bootstrap-icons';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './Profile.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Profile() {
-    const navigate = useNavigate();
-    const [name, setName] = useState('User');
-    const [email, setEmail] = useState('user@example.com');
-    const [image, setImage] = useState('');
-    const [locationCount, setLocationCount] = useState(0);
-    const [lastLogin, setLastLogin] = useState('');
-    const [key, setKey] = useState('edit');
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState({ name: "", email: "", contact: "", bio: "", instagram: "", facebook: "", twitter: "", photo: "" });
+  const [success, setSuccess] = useState("");
 
-    // ✅ Updated logic: Load user profile using token
-    useEffect(() => {
-        const fetchProfile = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                navigate('/login');
-                return;
-            }
+  useEffect(() => {
+    const name = localStorage.getItem("username") || "";
+    const email = localStorage.getItem("userEmail") || "";
+    const saved = JSON.parse(localStorage.getItem("userProfile")) || {};
+    setProfile({ name, email, ...saved });
+  }, []);
 
-            try {
-                const response = await axios.get('http://localhost:5000/api/users/profile', {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+  const handleChange = (e) => setProfile({ ...profile, [e.target.name]: e.target.value });
+  const handlePhotoUpload = (e) => {
+    const reader = new FileReader();
+    reader.onload = () => setProfile({ ...profile, photo: reader.result });
+    if (e.target.files[0]) reader.readAsDataURL(e.target.files[0]);
+  };
 
-                if (response.data.success) {
-                    const user = response.data.user;
-                    setName(user.name || 'User');
-                    setEmail(user.email || 'user@example.com');
-                    if (user.image) setImage(user.image);
-                    localStorage.setItem('user', JSON.stringify(user));
-                }
-            } catch (error) {
-                console.error('❌ Failed to fetch profile:', error);
-                navigate('/login');
-            }
-        };
+  const handleSave = () => {
+    localStorage.setItem("userProfile", JSON.stringify(profile));
+    localStorage.setItem("username", profile.name);
+    localStorage.setItem("userEmail", profile.email);
+    setSuccess("✅ Profile updated!");
+    setTimeout(() => setSuccess(""), 2500);
+  };
 
-        fetchProfile();
-
-        const history = JSON.parse(localStorage.getItem('locationHistory')) || [];
-        setLocationCount(history.length);
-        setLastLogin(localStorage.getItem('lastLogin') || 'Not available');
-    }, [navigate]);
-
-    const handleSave = () => {
-        localStorage.setItem('username', name);
-        alert("Profile updated!");
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImage(reader.result);
-                localStorage.setItem('profileImage', reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        localStorage.removeItem('profileImage');
-        localStorage.removeItem('user');
-        localStorage.removeItem('identity');
-        localStorage.removeItem('displayName');
-        navigate('/login');
-    };
-
-    const handleDeleteAccount = () => {
-        if (window.confirm('Are you sure? This will remove all saved data.')) {
-            localStorage.clear();
-            navigate('/register');
-        }
-    };
-
-    const handleChangePassword = () => {
-        alert('No backend connected. Password change feature is currently unavailable.');
-    };
-
-    return (
-        <div className="container py-5">
-            <Card className="shadow-lg mb-4 text-center animate__animated animate__fadeIn">
-                <Card.Body>
-                    <img
-                        src={image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}
-                        alt="Profile"
-                        width="100"
-                        className="rounded-circle mb-3"
-                    />
-                    <h4 className="fw-bold">{name}</h4>
-                    <p className="text-muted">{email}</p>
-                    <p><small>🕓 Last Login: {lastLogin}</small></p>
-                </Card.Body>
-            </Card>
-
-            <Tabs
-                id="profile-tabs"
-                activeKey={key}
-                onSelect={(k) => setKey(k)}
-                className="mb-3 justify-content-center"
-                fill
-            >
-                <Tab eventKey="edit" title="📝 Edit Profile">
-                    <Card className="shadow-sm p-4">
-                        <div className="text-center mb-3">
-                            <label className="btn btn-outline-secondary">
-                                <CloudUpload className="me-1" /> Change Picture
-                                <input type="file" accept="image/*" hidden onChange={handleImageChange} />
-                            </label>
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Name</label>
-                            <input type="text" className="form-control" value={name} onChange={(e) => setName(e.target.value)} />
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Email</label>
-                            <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} />
-                        </div>
-                        <Button variant="primary" onClick={handleSave}>Save</Button>
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="activity" title="📊 Activity">
-                    <Card className="shadow-sm p-4">
-                        <ul className="list-group list-group-flush">
-                            <li className="list-group-item"><TelephoneFill className="me-2" /> Called 112 - 2 days ago</li>
-                            <li className="list-group-item"><Whatsapp className="me-2" /> Shared location - 3 days ago</li>
-                            <li className="list-group-item">📝 Sent feedback - 1 week ago</li>
-                        </ul>
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="stats" title="📍 Track Me Stats">
-                    <Card className="shadow-sm p-4">
-                        <p>You have saved <strong>{locationCount}</strong> location points.</p>
-                        {locationCount > 0 && (
-                            <Button variant="outline-secondary" onClick={() => navigate('/trackme')}>View on Map</Button>
-                        )}
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="account" title="⚙️ Account">
-                    <Card className="shadow-sm p-4 text-center">
-                        <Button variant="warning" className="me-2" onClick={handleChangePassword}>
-                            <LockFill className="me-1" /> Change Password
-                        </Button>
-                        <Button variant="danger" className="me-2" onClick={handleDeleteAccount}>
-                            <Trash className="me-1" /> Delete Account
-                        </Button>
-                        <Button variant="secondary" onClick={handleLogout}>
-                            <BoxArrowRight className="me-1" /> Logout
-                        </Button>
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="social" title="🌐 Social Links">
-                    <Card className="shadow-sm p-4 text-center">
-                        <a href="https://wa.me" className="btn btn-success me-2" target="_blank" rel="noreferrer">
-                            <Whatsapp className="me-1" /> WhatsApp
-                        </a>
-                        <a href="https://twitter.com" className="btn btn-primary me-2" target="_blank" rel="noreferrer">
-                            <Twitter className="me-1" /> Twitter
-                        </a>
-                        <a href="https://instagram.com" className="btn btn-danger" target="_blank" rel="noreferrer">
-                            <Instagram className="me-1" /> Instagram
-                        </a>
-                    </Card>
-                </Tab>
-            </Tabs>
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)", padding: "20px", fontFamily: "'Inter', system-ui" }}>
+      <div style={{ background: "linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)", color: "white", padding: "30px 20px", borderRadius: "24px", marginBottom: "30px", boxShadow: "0 10px 30px rgba(91, 46, 255, 0.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "900px", margin: "0 auto" }}>
+          <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "800" }}>👤 My Profile</h2>
+          <button onClick={() => navigate("/dashboard")} style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "10px 16px", borderRadius: "12px", cursor: "pointer", fontWeight: "600" }}>← Back</button>
         </div>
-    );
+      </div>
+
+      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ background: "white", padding: "30px", borderRadius: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", marginBottom: "24px", textAlign: "center" }}>
+          <div style={{ width: "120px", height: "120px", borderRadius: "50%", margin: "0 auto 20px", background: profile.photo ? `url(${profile.photo}) center/cover` : "linear-gradient(135deg, #5B2EFF, #7C5CFF)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "48px", fontWeight: "800" }}>
+            {!profile.photo && (profile.name?.[0] || "U")}
+          </div>
+          <label style={{ display: "inline-block", background: "linear-gradient(135deg, #5B2EFF, #7C5CFF)", color: "white", padding: "10px 20px", borderRadius: "12px", cursor: "pointer", fontWeight: "600", boxShadow: "0 6px 16px rgba(91,46,255,0.3)" }}>
+            📸 Change Photo
+            <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
+          </label>
+        </div>
+
+        <div style={{ background: "white", padding: "30px", borderRadius: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", marginBottom: "24px" }}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: "18px", fontWeight: "700" }}>📋 Personal Information</h3>
+          <div style={{ display: "grid", gap: "18px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>👤 Full Name</label>
+              <input type="text" name="name" value={profile.name} onChange={handleChange} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "0.2s" }} onFocus={(e) => { e.target.style.borderColor = "#5B2EFF"; e.target.style.boxShadow = "0 0 0 3px rgba(91,46,255,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>📧 Email</label>
+              <input type="email" name="email" value={profile.email} onChange={handleChange} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "0.2s" }} onFocus={(e) => { e.target.style.borderColor = "#5B2EFF"; e.target.style.boxShadow = "0 0 0 3px rgba(91,46,255,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>📱 Contact</label>
+              <input type="tel" name="contact" value={profile.contact} onChange={handleChange} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "0.2s" }} onFocus={(e) => { e.target.style.borderColor = "#5B2EFF"; e.target.style.boxShadow = "0 0 0 3px rgba(91,46,255,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>✍️ Bio</label>
+              <textarea name="bio" value={profile.bio} onChange={handleChange} placeholder="Tell us about yourself..." style={{ width: "100%", padding: "12px 14px", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "14px", outline: "none", minHeight: "100px", boxSizing: "border-box", fontFamily: "inherit", resize: "vertical", transition: "0.2s" }} onFocus={(e) => { e.target.style.borderColor = "#5B2EFF"; e.target.style.boxShadow = "0 0 0 3px rgba(91,46,255,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: "white", padding: "30px", borderRadius: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", marginBottom: "24px" }}>
+          <h3 style={{ margin: "0 0 24px 0", fontSize: "18px", fontWeight: "700" }}>🔗 Social Links</h3>
+          <div style={{ display: "grid", gap: "18px" }}>
+            {[
+              { name: "instagram", icon: "📷", placeholder: "https://instagram.com/username" },
+              { name: "facebook", icon: "👍", placeholder: "https://facebook.com/username" },
+              { name: "twitter", icon: "🐦", placeholder: "https://twitter.com/username" }
+            ].map(field => (
+              <div key={field.name}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>{field.icon} {field.name[0].toUpperCase() + field.name.slice(1)}</label>
+                <input type="url" name={field.name} value={profile[field.name]} onChange={handleChange} placeholder={field.placeholder} style={{ width: "100%", padding: "12px 14px", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "0.2s" }} onFocus={(e) => { e.target.style.borderColor = "#5B2EFF"; e.target.style.boxShadow = "0 0 0 3px rgba(91,46,255,0.1)"; }} onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; e.target.style.boxShadow = "none"; }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {success && <div style={{ background: "#DCFCE7", color: "#15803D", padding: "16px", borderRadius: "12px", marginBottom: "24px", border: "1px solid #86EFAC", fontWeight: "500" }}>{success}</div>}
+
+        <div style={{ display: "flex", gap: "16px", justifyContent: "flex-end" }}>
+          <button onClick={() => navigate("/dashboard")} style={{ padding: "12px 24px", background: "#E5E7EB", color: "#111827", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", transition: "0.3s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#D1D5DB"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#E5E7EB"; }}>Cancel</button>
+          <button onClick={handleSave} style={{ padding: "12px 24px", background: "linear-gradient(135deg, #5B2EFF, #7C5CFF)", color: "white", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", boxShadow: "0 6px 16px rgba(91,46,255,0.3)", transition: "0.3s" }} onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 10px 24px rgba(91,46,255,0.4)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(91,46,255,0.3)"; }}>💾 Save</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default Profile;
