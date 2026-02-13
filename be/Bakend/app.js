@@ -14,17 +14,15 @@ var app = express();
 
 app.use(cors());
 
-const uri =
-  "mongodb+srv://aishwarya:shrivastava@cluster0.1dvs1yk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = process.env.MONGO_URI;
+
 async function connectDB() {
   try {
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("connected to MongoDB");
+    await mongoose.connect(uri);
+    console.log("✅ Connected to MongoDB");
   } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+    console.error("❌ MongoDB connection error:", error);
+    process.exit(1);
   }
 }
 connectDB();
