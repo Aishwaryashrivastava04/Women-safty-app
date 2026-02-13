@@ -1,16 +1,15 @@
 var express = require("express");
 var router = express.Router();
 var Story = require("../Models/story_tbl");
-
-/* ✅ API health check */
-router.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Backend is working 💚",
-  });
+/* GET home page. */
+router.get("/", function (req, res, next) {
+  res.render("index", { title: "Express" });
 });
 
-/* ➕ Add story */
+router.get("/", function (req, res, next) {
+  res.render("index", { title: "Express" });
+});
+
 router.post("/add/stories", async (req, res) => {
   try {
     const story = new Story(req.body);
@@ -21,7 +20,6 @@ router.post("/add/stories", async (req, res) => {
   }
 });
 
-/* 📄 Get all stories */
 router.get("/all/stories", async (req, res) => {
   try {
     const allstories = await Story.find({});
@@ -31,7 +29,15 @@ router.get("/all/stories", async (req, res) => {
   }
 });
 
-/* ❌ Delete story */
+// router.get("/stories/:id", async (req, res) => {
+//   try {
+//     const stories = await Story.findById(req.params.id);
+//     res.status(200).send({ stories });
+//   } catch (err) {
+//     res.status(400).send({ error: err.message });
+//   }
+// });
+
 router.delete("/stories/:id", async (req, res) => {
   try {
     const stories = await Story.findByIdAndDelete(req.params.id);
@@ -41,7 +47,6 @@ router.delete("/stories/:id", async (req, res) => {
   }
 });
 
-/* ✏️ Update story */
 router.put("/stories/:id", async (req, res) => {
   try {
     const stories = await Story.findByIdAndUpdate(req.params.id, req.body, {
@@ -54,10 +59,3 @@ router.put("/stories/:id", async (req, res) => {
 });
 
 module.exports = router;
-
-router.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Backend API working 💚"
-  });
-});

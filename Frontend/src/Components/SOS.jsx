@@ -34,17 +34,24 @@ function SOS() {
   };
 
   const sendSOS = () => {
-    contacts.forEach((contact) => {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        const { latitude, longitude } = pos.coords;
-        const message = `🚨 EMERGENCY! I need help immediately! Location: https://maps.google.com/?q=${latitude},${longitude}`;
-        window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
-      });
-    });
+  navigator.geolocation.getCurrentPosition((pos) => {
+    const { latitude, longitude } = pos.coords;
+
+    const message = `🚨 EMERGENCY! I need help immediately! Location: https://maps.google.com/?q=${latitude},${longitude}`;
+
+    const numbers = contacts.map((c) => c.phone).join(",");
+
+    window.location.href = `sms:${numbers}?body=${encodeURIComponent(message)}`;
+
     setStatus("✅ SOS Alerts Sent!");
     setIsCounting(false);
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
-  };
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  });
+};
 
   useEffect(() => {
     if (isCounting && timeLeft > 0) {

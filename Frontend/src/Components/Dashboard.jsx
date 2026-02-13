@@ -6,6 +6,9 @@ function Dashboard({ onLogout = () => {} }) {
   const navigate = useNavigate();
   const audioRef = useRef(null);
   const recognitionRef = useRef(null);
+  const [autoSent, setAutoSent] = useState(false);
+  const [autoCallTriggered, setAutoCallTriggered] = useState(false);
+  const [redAlertMode, setRedAlertMode] = useState(false);
 
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@example.com");
@@ -15,8 +18,12 @@ function Dashboard({ onLogout = () => {} }) {
   const [riskScore, setRiskScore] = useState(0);
   const [riskHistory, setRiskHistory] = useState([]);
   const [trackingOn, setTrackingOn] = useState(true);
-  const [safetyScore, setSafetyScore] = useState(87);
+  const [safetyScore, setSafetyScore] = useState(60);
   const [emergencyContacts, setEmergencyContacts] = useState(0);
+  const [aiThreatLevel, setAiThreatLevel] = useState("Low");
+  const [movementSpeed, setMovementSpeed] = useState(0);
+  const [aiConfidence, setAiConfidence] = useState(60);
+  const lastPositionRef = useRef(null);
 
   useEffect(() => {
     const storedName = localStorage.getItem("username");
@@ -42,53 +49,105 @@ function Dashboard({ onLogout = () => {} }) {
 
   // 📍 Professional Auto Tracking System
   useEffect(() => {
-    if (!trackingOn) return;
+  if (!trackingOn) return;
 
-    const interval = setInterval(() => {
-      if (!navigator.geolocation) return;
+  const interval = setInterval(() => {
+    if (!navigator.geolocation) return;
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-          setLocationHistory((prev) => [
-            {
-              time: new Date().toLocaleTimeString(),
-              link,
-            },
-            ...prev.slice(0, 4),
-          ]);
-        },
-        (err) => console.log(err),
-        { enableHighAccuracy: true }
-      );
-    }, 10000);
+        // 🧠 ML SPEED CALCULATION
+        if (lastPositionRef.current) {
+          const prev = lastPositionRef.current;
 
-    return () => clearInterval(interval);
-  }, [trackingOn]);
+          const distance = Math.sqrt(
+            Math.pow(latitude - prev.latitude, 2) +
+            Math.pow(longitude - prev.longitude, 2)
+          );
+
+          const timeDiff = (Date.now() - prev.timestamp) / 1000;
+
+          const speed = timeDiff > 0 ? distance / timeDiff * 100000 : 0;
+
+          setMovementSpeed(speed);
+
+          // 🧠 AI Threat Logic
+          if (speed > 8) {
+            setAiThreatLevel("High");
+            setAiConfidence(92);
+            increaseRisk(25);
+          } else if (speed > 4) {
+            setAiThreatLevel("Medium");
+            setAiConfidence(75);
+            increaseRisk(10);
+          } else {
+            setAiThreatLevel("Low");
+            setAiConfidence(60);
+          }
+        }
+
+        lastPositionRef.current = {
+          latitude,
+          longitude,
+          timestamp: Date.now(),
+        };
+
+        setLocationHistory((prev) => [
+          {
+            time: new Date().toLocaleTimeString(),
+            link,
+          },
+          ...prev.slice(0, 4),
+        ]);
+      },
+      (err) => console.log(err),
+      { enableHighAccuracy: true }
+    );
+  }, 10000);
+
+  return () => clearInterval(interval);
+}, [trackingOn]);
 
   // 📊 AI Risk System
   const increaseRisk = (value) => {
-    const multiplier = getNightMultiplier();
+  const multiplier = getNightMultiplier();
 
-    setRiskScore((prev) => {
-      const newScore = prev + value * multiplier;
-      setRiskHistory((h) => [...h.slice(-9), newScore]);
+  setRiskScore((prev) => {
+    const newScore = prev + value * multiplier;
+    setRiskHistory((h) => [...h.slice(-9), newScore]);
 
-      if (newScore >= 60) {
-        alert("🚨 AI Emergency Triggered!");
-        navigate("/sos");
+    // 🚨 60% → Auto SMS
+    if (newScore >= 70 && !autoSent) {
+      sendLocationToContacts();
+      setAutoSent(true);
+    }
+
+    // 📞 70% → Auto Call Police
+    if (newScore >= 80 && !autoCallTriggered) {
+      window.location.href = "tel:100";
+      setAutoCallTriggered(true);
+    }
+
+    // 🔴 80% → Red Alert Mode
+    if (newScore >= 90 && !redAlertMode) {
+      setRedAlertMode(true);
+      if (audioRef.current) {
+        audioRef.current.play();
       }
+    }
 
-      return newScore;
-    });
-  };
+    return newScore;
+  });
+};
 
   const resetRisk = () => {
     setRiskScore(0);
     setRiskHistory([]);
   };
+
 
   // 📩 Send Location to Contacts
   const sendLocationToContacts = () => {
@@ -248,6 +307,43 @@ function Dashboard({ onLogout = () => {} }) {
       </div>
 
       <div style={{ padding: "24px 16px" }}>
+        {/* 🧠 AI THREAT ANALYSIS */}
+<div
+  style={{
+    background: "#F3F4F6",
+    padding: "20px",
+    borderRadius: "24px",
+    marginBottom: "24px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+    border: "1px solid rgba(91, 46, 255, 0.1)",
+  }}
+>
+  <h4 style={{ margin: "0 0 10px 0" }}>🧠 AI Threat Analysis</h4>
+
+  <p style={{ margin: "6px 0" }}>
+    Threat Level:{" "}
+    <strong
+      style={{
+        color:
+          aiThreatLevel === "High"
+            ? "#DC2626"
+            : aiThreatLevel === "Medium"
+            ? "#F59E0B"
+            : "#16A34A",
+      }}
+    >
+      {aiThreatLevel}
+    </strong>
+  </p>
+
+  <p style={{ margin: "6px 0" }}>
+    Movement Speed: <strong>{movementSpeed.toFixed(2)} m/s</strong>
+  </p>
+
+  <p style={{ margin: "6px 0" }}>
+    AI Confidence: <strong>{aiConfidence}%</strong>
+  </p>
+</div>
         {/* PREMIUM SAFETY METRICS */}
         <div style={{ marginBottom: "28px" }}>
           <h5 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: "700", color: "#111827" }}>
@@ -699,4 +795,4 @@ const FeatureCard = ({ title, icon, onClick, color = "#F3F4F6", accentColor = "#
   </div>
 );
 
-export default Dashboard;
+export default Dashboard; 
