@@ -9,7 +9,7 @@ function Dashboard({ onLogout = () => {} }) {
   const [autoSent, setAutoSent] = useState(false);
   const [autoCallTriggered, setAutoCallTriggered] = useState(false);
   const [redAlertMode, setRedAlertMode] = useState(false);
-
+  const [stories, setStories] = useState([]);
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@example.com");
   const [locationHistory, setLocationHistory] = useState([]);
@@ -40,6 +40,24 @@ function Dashboard({ onLogout = () => {} }) {
     if (storedEmail) setUserEmail(storedEmail);
     setEmergencyContacts(contacts.length);
   }, [navigate]);
+
+   // 📚 Fetch Community Stories
+useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  fetch("https://women-safty-app.onrender.com/users/all/stories", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        setStories(data.allstories || []);
+      }
+    })
+    .catch((err) => console.log(err));
+}, []);
 
   // 🌙 Night Risk Boost
   const getNightMultiplier = () => {
@@ -184,6 +202,7 @@ function Dashboard({ onLogout = () => {} }) {
       recognitionRef.current.stop();
       setIsListening(false);
       return;
+      
     }
 
     const recognition = new SpeechRecognition();
@@ -713,7 +732,29 @@ function Dashboard({ onLogout = () => {} }) {
             </div>
           </div>
         )}
+        {/* COMMUNITY STORIES */}
+<div
+  style={{
+    background: "white",
+    padding: "20px",
+    borderRadius: "20px",
+    marginBottom: "20px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)"
+  }}
+>
+  <h3 style={{ marginBottom: "12px" }}>📚 Community Stories</h3>
 
+  {stories.length === 0 ? (
+    <p>No stories yet</p>
+  ) : (
+    stories.map((story, index) => (
+      <div key={index} style={{ marginBottom: "15px" }}>
+        <h4>{story.title}</h4>
+        <p>{story.description}</p>
+      </div>
+    ))
+  )}
+</div>
         {/* PREMIUM LOGOUT BUTTON */}
         <button
           onClick={() => {

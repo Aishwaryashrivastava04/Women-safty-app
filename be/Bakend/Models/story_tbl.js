@@ -1,29 +1,28 @@
 var mongoose = require("mongoose");
-var Schema =  mongoose.Schema;
+var Schema = mongoose.Schema;
 
 var newSchema = new Schema({
-    Title:String,
-    Description:String,
+    title: String,
+    description: String,
     PostedOn: {
-        type:Date,
-        default:Date.now,
+        type: Date,
+        default: Date.now,
     },
-    createdBy:{
-        type:Schema.Types.ObjectId,
+    createdBy: {
+        type: Schema.Types.ObjectId,
     },
-    comments:[
+    comments: [
         {
-            comment:String,
-            commentedBy:{
-                type:mongoose.Schema.Types.ObjectId
+            comment: String,
+            commentedBy: {
+                type: mongoose.Schema.Types.ObjectId
             },
-             PostedOn: {
-        type:Date,
-        default:Date.now,
-    },
+            PostedOn: {
+                type: Date,
+                default: Date.now,
+            },
         }
     ]
-    
 });
 
-module.exports = mongoose.model("emp", newSchema);
+module.exports = mongoose.model("Story", newSchema);

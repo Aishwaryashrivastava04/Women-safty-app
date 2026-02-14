@@ -1,8 +1,9 @@
-import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Home from './Components/Home';
+import React, { Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Login from './Components/Login';
 import Register from './Components/Register';
+import ForgotPassword from "./Components/ForgotPassword";
 
 // Lazy load heavy components (code-splitting for faster initial load)
 const Dashboard = React.lazy(() => import('./Components/Dashboard'));
@@ -34,15 +35,24 @@ const LoadingFallback = () => (
     ⏳ Loading...
   </div>
 );
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
 
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+};
 
 function DashboardWrapper() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    navigate('/login'); // or '/'
-  };
+  localStorage.removeItem("token");
+  localStorage.removeItem("isLoggedIn");
+  navigate("/login");
+};
 
   return <Dashboard onLogout={handleLogout} />;
 }
@@ -55,7 +65,14 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<DashboardWrapper />} />
+          <Route 
+  path="/dashboard" 
+  element={
+    <ProtectedRoute>
+      <DashboardWrapper />
+    </ProtectedRoute>
+  } 
+/>
           <Route path="/sos" element={<SOS />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/feedback" element={<Feedback />} />
@@ -68,6 +85,7 @@ function App() {
           <Route path="/safetytips" element={<SafetyTips />} />
           <Route path="/emergencysms" element={<EmergencySMS />} />
           <Route path="/quickcall" element={<QuickCall />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
       </Suspense>
     </Router>

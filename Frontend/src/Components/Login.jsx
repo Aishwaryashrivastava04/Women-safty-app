@@ -192,6 +192,7 @@ function Login() {
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 />
+                
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
@@ -208,8 +209,33 @@ function Login() {
                   }}
                 >
                   {showPass ? "👁️" : "👁️‍🗨️"}
+
                 </button>
               </div>
+              {/* FORGOT PASSWORD */}
+<div
+  style={{
+    textAlign: "right",
+    marginBottom: "20px",
+  }}
+>
+  <button
+    type="button"
+    onClick={() => navigate("/forgot-password")}
+    style={{
+      background: "none",
+      border: "none",
+      color: "#5B2EFF",
+      cursor: "pointer",
+      fontSize: "13px",
+      fontWeight: "600",
+      padding: 0,
+      textDecoration: "underline",
+    }}
+  >
+    Forgot Password?
+  </button>
+</div>
             </div>
 
             {/* ERROR MESSAGE */}

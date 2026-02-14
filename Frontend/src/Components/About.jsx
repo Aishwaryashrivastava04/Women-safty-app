@@ -1,66 +1,121 @@
-import React from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { motion } from 'framer-motion';
-import aboutImg from '../assets/women_safety_banner.svg'; // You can replace with your own image
+import React from "react";
+import { motion } from "framer-motion";
+import aboutImg from "../assets/women_safety_banner.svg";
 
 function About() {
   return (
-    <div className="container py-5">
-      <motion.div 
-        className="bg-light shadow p-5 rounded"
-        initial={{ opacity: 0, y: 50 }} 
-        animate={{ opacity: 1, y: 0 }} 
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, #6E3BFF 0%, #8E54E9 50%, #C471ED 100%)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "40px 20px",
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
+        style={{
+          maxWidth: "1100px",
+          width: "100%",
+          background: "rgba(255, 255, 255, 0.15)",
+          backdropFilter: "blur(20px)",
+          borderRadius: "20px",
+          padding: "50px",
+          color: "white",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+        }}
       >
-        <h2 className="fw-bold mb-4 text-danger text-center">🔎 About the App</h2>
-        <p className="lead text-secondary text-center mb-4">
-          <strong>Women Safety App</strong> is designed to protect and empower users through smart safety features.
-        </p>
+        {/* Title */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <h2 style={{ fontWeight: "700", fontSize: "32px" }}>
+            🔎 About SafeHere
+          </h2>
+          <p style={{ opacity: 0.8, marginTop: "10px" }}>
+            Smart technology built to protect and empower women.
+          </p>
+        </div>
 
-        <div className="row align-items-center">
-          {/* Features List */}
-          <div className="col-md-6">
-            <ul className="list-group list-group-flush">
-              <li className="list-group-item">🆘 SOS alert with location sharing</li>
-              <li className="list-group-item">📩 Emergency SMS to trusted contacts</li>
-              <li className="list-group-item">📍 Live location history with reverse geocoding</li>
-              <li className="list-group-item">📞 National helpline integration</li>
-              <li className="list-group-item">🧾 Feedback and profile management</li>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "40px",
+            alignItems: "center",
+          }}
+        >
+          {/* Left Content */}
+          <div>
+            <ul style={{ listStyle: "none", padding: 0, lineHeight: "2.2" }}>
+              <li>🆘 SOS alert with real-time location sharing</li>
+              <li>📩 Emergency SMS to trusted contacts</li>
+              <li>📍 Live tracking with reverse geocoding</li>
+              <li>📞 One-tap national helpline integration</li>
+              <li>🧾 Secure profile & feedback system</li>
             </ul>
-            <p className="text-muted mt-3">
-              Our mission is to create a safer world through technology. We focus on <strong>privacy</strong>,
-              <strong> security</strong>, and <strong>speed</strong> when it matters most.
+
+            <p style={{ marginTop: "20px", opacity: 0.9 }}>
+              Our mission is to build a safer environment through innovation.
+              We prioritize <strong>privacy</strong>, <strong>security</strong>,
+              and <strong>instant response</strong> when it matters most.
             </p>
           </div>
 
-          {/* Right Banner Image */}
-          <div className="col-md-6 text-center">
-            <img 
-              src={aboutImg} 
-              alt="Women Safety Illustration" 
-              className="img-fluid rounded mt-4 mt-md-0"
-              style={{ maxHeight: '300px' }}
+          {/* Right Image */}
+          <div style={{ textAlign: "center" }}>
+            <img
+              src={aboutImg}
+              alt="Women Safety Illustration"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "300px",
+                borderRadius: "16px",
+              }}
             />
           </div>
         </div>
 
-        {/* Testimonial or Quote Section */}
-        <motion.div 
-          className="mt-5 border-top pt-4 text-center"
+        {/* Quote Section */}
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
           transition={{ delay: 0.2 }}
+          style={{
+            marginTop: "50px",
+            paddingTop: "30px",
+            borderTop: "1px solid rgba(255,255,255,0.3)",
+            textAlign: "center",
+            fontStyle: "italic",
+            opacity: 0.85,
+          }}
         >
-          <blockquote className="blockquote text-secondary">
-            <p>"Safety is not just a right — it’s a necessity. Technology bridges the gap."</p>
-            <footer className="blockquote-footer">Empowerment Initiative Team</footer>
-          </blockquote>
+          <p>
+            "Safety is not just a right — it’s a necessity. Technology bridges
+            the gap."
+          </p>
+          <small>— SafeHere Team</small>
         </motion.div>
 
         {/* Back Button */}
-        <div className="text-center mt-4">
-          <button className="btn btn-outline-danger px-4" onClick={() => window.history.back()}>
+        <div style={{ textAlign: "center", marginTop: "40px" }}>
+          <button
+            onClick={() => window.history.back()}
+            style={{
+              padding: "12px 30px",
+              borderRadius: "30px",
+              border: "none",
+              background:
+                "linear-gradient(90deg, #FF6FD8 0%, #3813C2 100%)",
+              color: "white",
+              fontWeight: "600",
+              cursor: "pointer",
+              boxShadow: "0 10px 20px rgba(0,0,0,0.2)",
+            }}
+          >
             ⬅ Back
           </button>
         </div>
