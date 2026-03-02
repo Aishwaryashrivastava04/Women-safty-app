@@ -26,6 +26,30 @@ function Dashboard({ onLogout = () => {} }) {
   const lastPositionRef = useRef(null);
 
   useEffect(() => {
+
+  const handleMotion = (event) => {
+    const acc = event.accelerationIncludingGravity;
+    if (!acc) return;
+
+    const total =
+      Math.abs(acc.x || 0) +
+      Math.abs(acc.y || 0) +
+      Math.abs(acc.z || 0);
+
+    if (total > 30) {
+      increaseRisk(20);
+    }
+  };
+
+  window.addEventListener("devicemotion", handleMotion);
+
+  return () => {
+    window.removeEventListener("devicemotion", handleMotion);
+  };
+
+}, []);
+
+  useEffect(() => {
     const storedName = localStorage.getItem("username");
     const storedEmail = localStorage.getItem("userEmail");
     const contacts = JSON.parse(localStorage.getItem("emergencyContacts")) || [];

@@ -1,10 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+
+  const handleMotion = (event) => {
+    const acc = event.accelerationIncludingGravity;
+    if (!acc) return;
+
+    const total =
+      Math.abs(acc.x || 0) +
+      Math.abs(acc.y || 0) +
+      Math.abs(acc.z || 0);
+
+    if (total > 25) {
+      alert("🚨 Shake Detected!");
+      console.log("Shake detected");
+    }
+  };
+
+  window.addEventListener("devicemotion", handleMotion);
+
+  return () => {
+    window.removeEventListener("devicemotion", handleMotion);
+  };
+
+}, []);
 
   const isLoggedIn = localStorage.getItem("isLoggedIn");
 
