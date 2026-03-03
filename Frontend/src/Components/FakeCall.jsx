@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import momVoice from "../assets/mom-voice.mp3";
+import ringtone from "../assets/call-tone.mp3";
 
 function FakeCall() {
   const navigate = useNavigate();
@@ -8,6 +10,10 @@ function FakeCall() {
   const [callAccepted, setCallAccepted] = useState(false);
 
 useEffect(() => {
+    if (ringtoneRef.current) {
+  ringtoneRef.current.currentTime = 0;
+  ringtoneRef.current.play().catch(() => {});
+}
   if (navigator.vibrate) {
     navigator.vibrate([500, 300, 500, 300, 1000]);
   }
@@ -19,7 +25,6 @@ useEffect(() => {
 
   return () => {
     clearTimeout(timer);
-    stopAll();
   };
 }, [navigate]);
 
@@ -76,8 +81,8 @@ useEffect(() => {
         textAlign: "center",
       }}
     >
-      <audio ref={ringtoneRef} src="/call-tone.mp3" loop autoPlay playsInline />
-     <audio ref={voiceRef} src="/mom-voice.mp3" preload="auto" playsInline />
+      <audio ref={ringtoneRef} src={ringtone} loop autoPlay playsInline />
+<audio ref={voiceRef} src={momVoice} preload="auto" playsInline />
 
       <div style={{ marginTop: "100px" }}>
         <div
