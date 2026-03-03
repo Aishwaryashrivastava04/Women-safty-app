@@ -32,34 +32,17 @@ function EmergencySMS() {
     const message = `🚨 I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
 
     try {
-      // ✅ If running inside Android WebView
-      if (window.Android) {
-        if (actionType === 'sms' && window.Android.sendSMS) {
-          window.Android.sendSMS(selectedContact.phone, message);
-        }
+      if (actionType === 'sms') {
+        window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
+      }
 
-        if (actionType === 'call' && window.Android.makeCall) {
-          window.Android.makeCall(selectedContact.phone);
-        }
+      if (actionType === 'call') {
+        window.location.href = `tel:${selectedContact.phone}`;
+      }
 
-        if (actionType === 'whatsapp') {
-          const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
-          window.open(whatsappURL, '_blank');
-        }
-      } else {
-        // 🌐 Browser fallback
-        if (actionType === 'sms') {
-          window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
-        }
-
-        if (actionType === 'call') {
-          window.location.href = `tel:${selectedContact.phone}`;
-        }
-
-        if (actionType === 'whatsapp') {
-          const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
-          window.open(whatsappURL, '_blank');
-        }
+      if (actionType === 'whatsapp') {
+        const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
       }
     } catch (err) {
       console.error("Emergency action failed:", err);
