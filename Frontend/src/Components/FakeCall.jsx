@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import momVoice from "../assets/mom-voice.mp3";
-import ringtone from "../assets/siren.mp3";
+import ringtone from "../assets/call-tone.mp3";
 
 function FakeCall() {
   const navigate = useNavigate();
