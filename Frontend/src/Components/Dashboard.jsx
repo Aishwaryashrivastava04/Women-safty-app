@@ -689,7 +689,7 @@ useEffect(() => {
               icon="📩"
               color="#E0F2FE"
               accentColor="#0084FF"
-              onClick={sendLocationToContacts}
+              onClick={() => navigate("/emergencysms")}
             />
             <FeatureCard
               title="Helpline"
