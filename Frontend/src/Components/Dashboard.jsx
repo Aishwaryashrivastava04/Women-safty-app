@@ -239,41 +239,21 @@ useEffect(() => {
       const newScore = prev + value * multiplier;
       setRiskHistory((h) => [...h.slice(-9), newScore]);
 
-      // 🚨 60% → Auto SMS
-      if (newScore >= 50 && !autoSent) {
+      // 🚨 40% → Auto SMS (lowered threshold for shake)
+      if (newScore >= 40 && !autoSent) {
         sendLocationToContacts();
         setAutoSent(true);
       }
 
-      // 📞 High Risk → Ask before calling police
-      if (newScore >= 85 && !autoCallTriggered) {
-        const confirmCall = window.confirm(
-          "⚠️ High risk detected!\nDo you want to call Police (100)?"
-        );
-        if (confirmCall) {
-          window.location.href = "tel:100";
-        }
+      // 📞 70% → Direct Police Call (no confirm)
+      if (newScore >= 70 && !autoCallTriggered) {
+        window.location.href = "tel:100";
         setAutoCallTriggered(true);
       }
-      //
-      if (newScore >= 85) {
+
+      // 📸 80% → Capture Evidence
+      if (newScore >= 80) {
         capturePhoto();
-      }
-
-      // 🔴 90% → Red Alert Mode
-      if (newScore >= 90 && !redAlertMode) {
-        setRedAlertMode(true);
-
-        if (audioRef.current) {
-          audioRef.current
-            .play()
-            .then(() => {
-              console.log("Alarm started");
-            })
-            .catch((e) => {
-              console.log("Autoplay blocked:", e);
-            });
-        }
       }
 
       return newScore;
@@ -285,7 +265,7 @@ useEffect(() => {
     setRiskHistory([]);
   };
 
-  // 📩 Send Location to Contacts
+  // 📩 Send Location to Contacts (improved: triggers SMS one-by-one, Android WebView compatible)
   const sendLocationToContacts = () => {
     const contacts =
       JSON.parse(localStorage.getItem("emergencyContacts")) || [];
@@ -298,11 +278,15 @@ useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude, longitude } = pos.coords;
       const message = encodeURIComponent(
-        `🚨 I need help! My location: https://www.google.com/maps?q=${latitude},${longitude}`
+        `🚨 EMERGENCY! My location: https://www.google.com/maps?q=${latitude},${longitude}`
       );
 
-      const numbers = contacts.map((c) => c.phone).join(",");
-      window.location.href = `sms:${numbers}?body=${message}`;
+      // Send SMS one by one with slight delay (important for WebView)
+      contacts.forEach((c, index) => {
+        setTimeout(() => {
+          window.location.href = `sms:${c.phone}?body=${message}`;
+        }, index * 1500);
+      });
     });
   };
 
@@ -770,7 +754,7 @@ useEffect(() => {
   icon="📞"
   color="#FDE68A"
   accentColor="#B45309"
-  onClick={() => navigate("/fake-call")}
+  onClick={() => navigate("/fakecall")}
 />
           </div>
         </div>

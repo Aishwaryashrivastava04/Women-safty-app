@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 function FakeCall() {
   const navigate = useNavigate();
   const ringtoneRef = useRef(null);
+  const voiceRef = useRef(null);
+  const [callAccepted, setCallAccepted] = React.useState(false);
 
   useEffect(() => {
     // 🔊 Play ringtone
@@ -39,8 +41,27 @@ function FakeCall() {
       ringtoneRef.current.currentTime = 0;
     }
 
+    if (voiceRef.current) {
+      voiceRef.current.pause();
+      voiceRef.current.currentTime = 0;
+    }
+
     if (navigator.vibrate) {
       navigator.vibrate(0);
+    }
+  };
+
+  const handleAcceptCall = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+    }
+
+    setCallAccepted(true);
+
+    if (voiceRef.current) {
+      voiceRef.current.play().catch((err) => {
+        console.log("Voice play blocked:", err);
+      });
     }
   };
 
@@ -68,6 +89,7 @@ function FakeCall() {
         src="https://www.soundjay.com/phone/sounds/phone-ring-01a.mp3"
         loop
       />
+      <audio ref={voiceRef} src="/mom-voice.mp3" />
 
       <div style={{ marginTop: "80px" }}>
         <div
@@ -92,6 +114,12 @@ function FakeCall() {
         <p style={{ opacity: 0.7 }}>Incoming voice call</p>
       </div>
 
+      {callAccepted && (
+        <div style={{ marginTop: "20px", fontSize: "18px", opacity: 0.8 }}>
+          💬 "Sab thik hai na beta?"
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: "60px", marginBottom: "80px" }}>
         <button
           onClick={handleClose}
@@ -110,7 +138,7 @@ function FakeCall() {
         </button>
 
         <button
-          onClick={handleClose}
+          onClick={handleAcceptCall}
           style={{
             background: "#22c55e",
             borderRadius: "50%",
