@@ -45,17 +45,23 @@ function FakeCall() {
     }
   };
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
+  try {
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
     }
 
     setCallAccepted(true);
 
     if (voiceRef.current) {
-      voiceRef.current.play().catch(() => {});
+      voiceRef.current.currentTime = 0;
+      await voiceRef.current.play();
     }
-  };
+  } catch (err) {
+    console.log("Voice play error:", err);
+  }
+};
 
   const handleReject = () => {
     stopAll();
@@ -77,7 +83,7 @@ function FakeCall() {
       }}
     >
       <audio ref={ringtoneRef} src={ringtone} loop />
-      <audio ref={voiceRef} src={momVoice} />
+      <audio ref={voiceRef} src={momVoice} preload="auto" />
 
       <div style={{ marginTop: "100px" }}>
         <div
