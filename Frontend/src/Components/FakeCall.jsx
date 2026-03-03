@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-
+import momVoice from "../assets/mom-voice.mp3";
 function FakeCall() {
   const navigate = useNavigate();
   const ringtoneRef = useRef(null);
@@ -89,7 +89,7 @@ function FakeCall() {
         src="https://www.soundjay.com/phone/sounds/phone-ring-01a.mp3"
         loop
       />
-      <audio ref={voiceRef} src="/mom-voice.mp3" />
+      <audio ref={voiceRef} src={momVoice} />
 
       <div style={{ marginTop: "80px" }}>
         <div
