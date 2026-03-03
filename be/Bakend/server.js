@@ -1,12 +1,14 @@
+
 const http = require('http');
+const PORT = process.env.PORT || 3000;
 
 const users = {};
 
 const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -86,8 +88,8 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('🎯 Server listening on 0.0.0.0:3000');
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎯 Server listening on 0.0.0.0:${PORT}`);
 });
 
 server.on('error', (err) => {
