@@ -754,7 +754,7 @@ useEffect(() => {
   icon="📞"
   color="#FDE68A"
   accentColor="#B45309"
-  onClick={() => navigate("/fakecall")}
+  onClick={() => navigate("/fake-call")}
 />
           </div>
         </div>

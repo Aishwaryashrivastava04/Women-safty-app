@@ -1,27 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import momVoice from "../assets/mom-voice.mp3";
-import ringtone from "../assets/siren.mp3"; // ya jo ringtone file ho
+import ringtone from "../assets/siren.mp3";
 
 function FakeCall() {
   const navigate = useNavigate();
   const ringtoneRef = useRef(null);
   const voiceRef = useRef(null);
-
   const [callAccepted, setCallAccepted] = useState(false);
 
   useEffect(() => {
-    // 🔊 Play ringtone on load
     if (ringtoneRef.current) {
       ringtoneRef.current.play().catch(() => {});
     }
 
-    // 📳 Vibration
     if (navigator.vibrate) {
       navigator.vibrate([500, 300, 500, 300, 1000]);
     }
 
-    // ⏳ Auto close after 25 sec
     const timer = setTimeout(() => {
       stopAll();
       navigate("/dashboard");
@@ -77,10 +73,9 @@ function FakeCall() {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "40px 20px",
-        textAlign: "center"
+        textAlign: "center",
       }}
     >
-      {/* Audio Elements */}
       <audio ref={ringtoneRef} src={ringtone} loop />
       <audio ref={voiceRef} src={momVoice} />
 
@@ -95,7 +90,7 @@ function FakeCall() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "50px"
+            fontSize: "50px",
           }}
         >
           👩
@@ -121,7 +116,7 @@ function FakeCall() {
             height: "90px",
             border: "none",
             color: "white",
-            fontSize: "20px"
+            fontSize: "20px",
           }}
         >
           ❌
@@ -136,7 +131,7 @@ function FakeCall() {
             height: "90px",
             border: "none",
             color: "white",
-            fontSize: "20px"
+            fontSize: "20px",
           }}
         >
           📞
