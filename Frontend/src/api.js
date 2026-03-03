@@ -1,14 +1,11 @@
-// src/api.js
-
 const getApiBaseUrl = () => {
-
-  // Production (Netlify / Android WebView)
-  if (window.location.hostname.includes("netlify.app")) {
-    return "https://women-safty-app.onrender.com";
+  // If running locally on laptop
+  if (window.location.hostname === "localhost") {
+    return "http://localhost:3000";
   }
 
-  // Local development
-  return "http://localhost:3000";
+  // For Vercel, Android WebView, or any production environment
+  return "https://women-safty-app.onrender.com";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
