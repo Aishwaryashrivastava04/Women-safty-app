@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'r
 import Login from './Components/Login';
 import Register from './Components/Register';
 import ForgotPassword from "./Components/ForgotPassword";
+import FakeCall from "./Components/FakeCall";
 
 // Lazy load heavy components (code-splitting for faster initial load)
 const Dashboard = React.lazy(() => import('./Components/Dashboard'));
