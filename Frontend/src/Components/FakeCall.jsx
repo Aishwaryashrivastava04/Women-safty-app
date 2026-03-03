@@ -9,25 +9,21 @@ function FakeCall() {
   const voiceRef = useRef(null);
   const [callAccepted, setCallAccepted] = useState(false);
 
-  useEffect(() => {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.play().catch(() => {});
-    }
+useEffect(() => {
+  if (navigator.vibrate) {
+    navigator.vibrate([500, 300, 500, 300, 1000]);
+  }
 
-    if (navigator.vibrate) {
-      navigator.vibrate([500, 300, 500, 300, 1000]);
-    }
+  const timer = setTimeout(() => {
+    stopAll();
+    navigate("/dashboard");
+  }, 25000);
 
-    const timer = setTimeout(() => {
-      stopAll();
-      navigate("/dashboard");
-    }, 25000);
-
-    return () => {
-      clearTimeout(timer);
-      stopAll();
-    };
-  }, [navigate]);
+  return () => {
+    clearTimeout(timer);
+    stopAll();
+  };
+}, [navigate]);
 
   const stopAll = () => {
     if (ringtoneRef.current) {
@@ -47,11 +43,6 @@ function FakeCall() {
 
   const handleAccept = async () => {
   try {
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
-
     setCallAccepted(true);
 
     if (voiceRef.current) {
