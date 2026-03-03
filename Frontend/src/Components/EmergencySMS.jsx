@@ -26,24 +26,19 @@ function EmergencySMS() {
   const getInitials = (name) => name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   const performAction = () => {
-    if (!window.Android) {
-      alert("Android bridge not connected. Please reinstall updated APK.");
-      return;
-    }
     if (!selectedContact || !position) return;
 
     const { lat, lng } = position;
     const message = `🚨 I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
 
     try {
-      // If running inside Android WebView
+      // ✅ If running inside Android WebView
       if (window.Android) {
-
-        if (actionType === 'sms') {
+        if (actionType === 'sms' && window.Android.sendSMS) {
           window.Android.sendSMS(selectedContact.phone, message);
         }
 
-        if (actionType === 'call') {
+        if (actionType === 'call' && window.Android.makeCall) {
           window.Android.makeCall(selectedContact.phone);
         }
 
@@ -51,9 +46,8 @@ function EmergencySMS() {
           const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
           window.open(whatsappURL, '_blank');
         }
-
       } else {
-        // Fallback for normal browser testing
+        // 🌐 Browser fallback
         if (actionType === 'sms') {
           window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
         }
