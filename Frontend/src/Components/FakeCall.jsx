@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import momVoice from "../assets/mom-voice.mp3";
-import ringtone from "../public/call-tone.mp3";
 
 function FakeCall() {
   const navigate = useNavigate();
@@ -78,7 +76,7 @@ useEffect(() => {
         textAlign: "center",
       }}
     >
-      <audio ref={ringtoneRef} src={ringtone} loop autoPlay playsInline />
+      <audio ref={ringtoneRef} src="/call-tone.mp3" loop autoPlay playsInline />
      <audio ref={voiceRef} src="/mom-voice.mp3" preload="auto" playsInline />
 
       <div style={{ marginTop: "100px" }}>
