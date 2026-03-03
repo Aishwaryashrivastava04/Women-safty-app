@@ -245,22 +245,27 @@ useEffect(() => {
       setAutoSent(true);
     }
     if (newScore >= 65 && !fakeCallTriggered) {
-  navigate("/fakecall");
-  setFakeCallTriggered(true);
-}
-if (newScore >= 80 && !lockMode) {
-  setLockMode(true);
-}
+      navigate("/fakecall");
+      setFakeCallTriggered(true);
+    }
+    if (newScore >= 80 && !lockMode) {
+      setLockMode(true);
+    }
 
-    // 📞 70% → Auto Call Police
-    if (newScore >= 80 && !autoCallTriggered) {
-      window.location.href = "tel:100";
+    // 📞 High Risk → Ask before calling police
+    if (newScore >= 85 && !autoCallTriggered) {
+      const confirmCall = window.confirm(
+        "⚠️ High risk detected!\nDo you want to call Police (100)?"
+      );
+      if (confirmCall) {
+        window.location.href = "tel:100";
+      }
       setAutoCallTriggered(true);
     }
     //
-        if (newScore >= 85) {
-  capturePhoto();
-}
+    if (newScore >= 85) {
+      capturePhoto();
+    }
 
     // 🔴 90% → Red Alert Mode
 if (newScore >= 90 && !redAlertMode) {
