@@ -245,7 +245,7 @@ useEffect(() => {
       setAutoSent(true);
     }
     if (newScore >= 65 && !fakeCallTriggered) {
-      navigate("/fakecall");
+      navigate("/fake-call");
       setFakeCallTriggered(true);
     }
     if (newScore >= 80 && !lockMode) {
@@ -777,7 +777,7 @@ if (newScore >= 90 && !redAlertMode) {
   icon="📞"
   color="#FDE68A"
   accentColor="#B45309"
-  onClick={() => navigate("/fakecall")}
+  onClick={() => navigate("/fake-call")}
 />
           </div>
         </div>
