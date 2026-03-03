@@ -86,6 +86,7 @@ function App() {
           <Route path="/emergencysms" element={<EmergencySMS />} />
           <Route path="/quickcall" element={<QuickCall />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/fake-call" element={<FakeCall />} />
         </Routes>
       </Suspense>
     </Router>

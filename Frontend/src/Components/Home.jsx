@@ -78,21 +78,7 @@ function Home() {
           </button>
 
           {isLoggedIn ? (
-            <button
-              onClick={() => navigate("/dashboard")}
-              style={{
-                padding: "10px 18px",
-                borderRadius: "12px",
-                border: "none",
-                background: "linear-gradient(135deg, #5B2EFF, #7C5CFF)",
-                color: "white",
-                fontWeight: "600",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              Dashboard
-            </button>
+            <button></button>
           ) : (
             <>
               <button

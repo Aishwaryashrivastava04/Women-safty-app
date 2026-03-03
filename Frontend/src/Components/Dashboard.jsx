@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import sirenSound from "../assets/siren.mp3";
 
-function Dashboard({ onLogout = () => {} }) {
+ function Dashboard({ onLogout = () => {} }) {
   const navigate = useNavigate();
   const audioRef = useRef(null);
   const recognitionRef = useRef(null);
+  const [tapCount, setTapCount] = useState(0);
+  const tapTimerRef = useRef(null);
   const [autoSent, setAutoSent] = useState(false);
   const [autoCallTriggered, setAutoCallTriggered] = useState(false);
   const [redAlertMode, setRedAlertMode] = useState(false);
@@ -24,6 +26,25 @@ function Dashboard({ onLogout = () => {} }) {
   const [movementSpeed, setMovementSpeed] = useState(0);
   const [aiConfidence, setAiConfidence] = useState(60);
   const lastPositionRef = useRef(null);
+  const [fakeCallTriggered, setFakeCallTriggered] = useState(false);
+const [lockMode, setLockMode] = useState(false);
+const [capturedImage, setCapturedImage] = useState(null);
+
+  // 👇 ADD THIS FIRST
+useEffect(() => {
+  if (
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    DeviceMotionEvent.requestPermission()
+      .then((response) => {
+        if (response === "granted") {
+          console.log("Motion permission granted");
+        }
+      })
+      .catch(console.error);
+  }
+}, []);
 
   useEffect(() => {
 
@@ -48,6 +69,56 @@ function Dashboard({ onLogout = () => {} }) {
   };
 
 }, []);
+ 
+const handleStealthTap = () => {
+  const newCount = tapCount + 1;
+  setTapCount(newCount);
+
+  if (tapTimerRef.current) {
+    clearTimeout(tapTimerRef.current);
+  }
+
+  tapTimerRef.current = setTimeout(() => {
+    setTapCount(0);
+  }, 2000);
+
+  if (newCount === 3) {
+    increaseRisk(50);
+    setTapCount(0);
+  }
+};
+
+const capturePhoto = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" }
+    });
+
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    await video.play();
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    const imageData = canvas.toDataURL("image/png");
+
+    // Save in localStorage
+    localStorage.setItem("lastCapturedImage", imageData);
+    setCapturedImage(imageData);
+
+    // Stop camera
+    stream.getTracks().forEach(track => track.stop());
+
+    console.log("Photo captured silently");
+  } catch (err) {
+    console.log("Camera error:", err);
+  }
+};
 
   useEffect(() => {
     const storedName = localStorage.getItem("username");
@@ -64,6 +135,13 @@ function Dashboard({ onLogout = () => {} }) {
     if (storedEmail) setUserEmail(storedEmail);
     setEmergencyContacts(contacts.length);
   }, [navigate]);
+
+  useEffect(() => {
+    const savedImage = localStorage.getItem("lastCapturedImage");
+    if (savedImage) {
+      setCapturedImage(savedImage);
+    }
+  }, []);
 
    // 📚 Fetch Community Stories
 useEffect(() => {
@@ -162,24 +240,43 @@ useEffect(() => {
     setRiskHistory((h) => [...h.slice(-9), newScore]);
 
     // 🚨 60% → Auto SMS
-    if (newScore >= 70 && !autoSent) {
+    if (newScore >= 50 && !autoSent) {
       sendLocationToContacts();
       setAutoSent(true);
     }
+    if (newScore >= 65 && !fakeCallTriggered) {
+  navigate("/fakecall");
+  setFakeCallTriggered(true);
+}
+if (newScore >= 80 && !lockMode) {
+  setLockMode(true);
+}
 
     // 📞 70% → Auto Call Police
     if (newScore >= 80 && !autoCallTriggered) {
       window.location.href = "tel:100";
       setAutoCallTriggered(true);
     }
+    //
+        if (newScore >= 85) {
+  capturePhoto();
+}
 
-    // 🔴 80% → Red Alert Mode
-    if (newScore >= 90 && !redAlertMode) {
-      setRedAlertMode(true);
-      if (audioRef.current) {
-        audioRef.current.play();
-      }
-    }
+    // 🔴 90% → Red Alert Mode
+if (newScore >= 90 && !redAlertMode) {
+  setRedAlertMode(true);
+
+  if (audioRef.current) {
+    audioRef.current
+      .play()
+      .then(() => {
+        console.log("Alarm started");
+      })
+      .catch((e) => {
+        console.log("Autoplay blocked:", e);
+      });
+  }
+}
 
     return newScore;
   });
@@ -189,7 +286,6 @@ useEffect(() => {
     setRiskScore(0);
     setRiskHistory([]);
   };
-
 
   // 📩 Send Location to Contacts
   const sendLocationToContacts = () => {
@@ -273,6 +369,11 @@ useEffect(() => {
 
   return (
     <div
+     onClick={(e) => {
+  if (e.target === e.currentTarget) {
+    handleStealthTap();
+  }
+}}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%, #E8EFFF 100%)",
@@ -641,6 +742,13 @@ useEffect(() => {
               accentColor="#7C5CFF"
               onClick={() => navigate("/settings")}
             />
+            <FeatureCard
+  title="Fake Call"
+  icon="📞"
+  color="#FDE68A"
+  accentColor="#B45309"
+  onClick={() => navigate("/fakecall")}
+/>
           </div>
         </div>
 
@@ -756,6 +864,83 @@ useEffect(() => {
             </div>
           </div>
         )}
+        {lockMode && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      background: "rgba(220, 38, 38, 0.95)",
+      color: "white",
+      zIndex: 9999,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      animation: "pulse 1s infinite"
+    }}
+  >
+    <h1 style={{ fontSize: "32px", marginBottom: "20px" }}>
+      🚨 EMERGENCY MODE ACTIVE 🚨
+    </h1>
+
+    <button
+      onClick={() => setLockMode(false)}
+      style={{
+        padding: "12px 20px",
+        borderRadius: "10px",
+        border: "none",
+        background: "white",
+        color: "red",
+        fontWeight: "bold"
+      }}
+    >
+      Deactivate
+    </button>
+  </div>
+)}
+        {capturedImage && (
+  <div
+    style={{
+      background: "white",
+      padding: "18px",
+      borderRadius: "20px",
+      marginBottom: "20px",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.06)"
+    }}
+  >
+    <h4 style={{ marginBottom: "12px" }}>📸 Captured Evidence</h4>
+    <img
+      src={capturedImage}
+      alt="Captured Evidence"
+      style={{
+        width: "100%",
+        borderRadius: "16px",
+        border: "2px solid #E5E7EB"
+      }}
+    />
+    <button
+      onClick={() => {
+        localStorage.removeItem("lastCapturedImage");
+        setCapturedImage(null);
+      }}
+      style={{
+        marginTop: "12px",
+        padding: "8px 14px",
+        borderRadius: "8px",
+        border: "none",
+        background: "#DC2626",
+        color: "white",
+        fontWeight: "600",
+        cursor: "pointer"
+      }}
+    >
+      Clear Evidence
+    </button>
+  </div>
+)}
         {/* COMMUNITY STORIES */}
 <div
   style={{
