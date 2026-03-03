@@ -4,42 +4,22 @@ import { useNavigate } from "react-router-dom";
 function FakeCall() {
   const navigate = useNavigate();
   const ringtoneRef = useRef(null);
-  const streamRef = useRef(null);
 
   useEffect(() => {
     // 🔊 Play ringtone
     if (ringtoneRef.current) {
-      ringtoneRef.current.play().catch(() => {});
+      const playPromise = ringtoneRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.log("Ringtone autoplay blocked:", err);
+        });
+      }
     }
 
     // 📳 Vibration pattern
     if (navigator.vibrate) {
       navigator.vibrate([500, 300, 500, 300, 1000]);
     }
-
-    // 🔦 Flashlight Blink (if supported)
-    const startFlash = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
-        });
-        streamRef.current = stream;
-
-        const track = stream.getVideoTracks()[0];
-        const imageCapture = new ImageCapture(track);
-
-        const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
-          await track.applyConstraints({
-            advanced: [{ torch: true }]
-          });
-        }
-      } catch (err) {
-        console.log("Flash not supported");
-      }
-    };
-
-    startFlash();
 
     // ⏳ Auto close after 20 sec
     const timer = setTimeout(() => {
@@ -61,10 +41,6 @@ function FakeCall() {
 
     if (navigator.vibrate) {
       navigator.vibrate(0);
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
     }
   };
 

@@ -309,32 +309,57 @@ if (newScore >= 90 && !redAlertMode) {
   };
 
   // 🎙 Voice AI
-  const toggleVoiceAI = () => {
+  const toggleVoiceAI = async () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech recognition not supported.");
+      alert("Speech recognition not supported in this device.");
       return;
     }
 
-    if (isListening) {
+    // If already listening → stop
+    if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
       return;
-      
+    }
+
+    try {
+      // 🔐 Force mic permission first (important for Android WebView)
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert("Microphone permission denied.");
+      return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.lang = "en-US";
+    recognition.interimResults = false;
+
     recognitionRef.current = recognition;
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      console.log("🎙 Mic started");
+      setIsListening(true);
+    };
+
+    recognition.onend = () => {
+      console.log("🎙 Mic stopped");
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.log("Speech error:", event.error);
+      setIsListening(false);
+    };
 
     recognition.onresult = (event) => {
       const transcript =
         event.results[event.results.length - 1][0].transcript.toLowerCase();
+
+      console.log("Heard:", transcript);
 
       if (transcript.includes("send my location")) {
         sendLocationToContacts();

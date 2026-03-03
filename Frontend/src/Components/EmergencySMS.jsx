@@ -26,18 +26,51 @@ function EmergencySMS() {
   const getInitials = (name) => name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   const performAction = () => {
+    if (!window.Android) {
+      alert("Android bridge not connected. Please reinstall updated APK.");
+      return;
+    }
     if (!selectedContact || !position) return;
+
     const { lat, lng } = position;
     const message = `🚨 I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
 
-    if (actionType === 'sms') {
-      window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
-    } else if (actionType === 'call') {
-      window.location.href = `tel:${selectedContact.phone}`;
-    } else if (actionType === 'whatsapp') {
-      const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappURL, '_blank');
+    try {
+      // If running inside Android WebView
+      if (window.Android) {
+
+        if (actionType === 'sms') {
+          window.Android.sendSMS(selectedContact.phone, message);
+        }
+
+        if (actionType === 'call') {
+          window.Android.makeCall(selectedContact.phone);
+        }
+
+        if (actionType === 'whatsapp') {
+          const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappURL, '_blank');
+        }
+
+      } else {
+        // Fallback for normal browser testing
+        if (actionType === 'sms') {
+          window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
+        }
+
+        if (actionType === 'call') {
+          window.location.href = `tel:${selectedContact.phone}`;
+        }
+
+        if (actionType === 'whatsapp') {
+          const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappURL, '_blank');
+        }
+      }
+    } catch (err) {
+      console.error("Emergency action failed:", err);
     }
+
     setShowModal(false);
   };
 
