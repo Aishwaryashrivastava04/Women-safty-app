@@ -10,11 +10,6 @@ function FakeCall() {
   const [callAccepted, setCallAccepted] = useState(false);
 
 useEffect(() => {
-  if (ringtoneRef.current) {
-    ringtoneRef.current.currentTime = 0;
-    ringtoneRef.current.play().catch(() => {});
-  }
-
   if (navigator.vibrate) {
     navigator.vibrate([500, 300, 500, 300, 1000]);
   }
@@ -83,8 +78,8 @@ useEffect(() => {
         textAlign: "center",
       }}
     >
-      <audio ref={ringtoneRef} src={ringtone} loop />
-      <audio ref={voiceRef} src={momVoice} preload="auto" />
+      <audio ref={ringtoneRef} src={ringtone} loop autoPlay playsInline />
+      <audio ref={voiceRef} src={momVoice} preload="auto" playsInline />
 
       <div style={{ marginTop: "100px" }}>
         <div
