@@ -233,59 +233,52 @@ useEffect(() => {
 
   // 📊 AI Risk System
   const increaseRisk = (value) => {
-  const multiplier = getNightMultiplier();
+    const multiplier = getNightMultiplier();
 
-  setRiskScore((prev) => {
-    const newScore = prev + value * multiplier;
-    setRiskHistory((h) => [...h.slice(-9), newScore]);
+    setRiskScore((prev) => {
+      const newScore = prev + value * multiplier;
+      setRiskHistory((h) => [...h.slice(-9), newScore]);
 
-    // 🚨 60% → Auto SMS
-    if (newScore >= 50 && !autoSent) {
-      sendLocationToContacts();
-      setAutoSent(true);
-    }
-    if (newScore >= 65 && !fakeCallTriggered) {
-      navigate("/fake-call");
-      setFakeCallTriggered(true);
-    }
-    if (newScore >= 80 && !lockMode) {
-      setLockMode(true);
-    }
-
-    // 📞 High Risk → Ask before calling police
-    if (newScore >= 85 && !autoCallTriggered) {
-      const confirmCall = window.confirm(
-        "⚠️ High risk detected!\nDo you want to call Police (100)?"
-      );
-      if (confirmCall) {
-        window.location.href = "tel:100";
+      // 🚨 60% → Auto SMS
+      if (newScore >= 50 && !autoSent) {
+        sendLocationToContacts();
+        setAutoSent(true);
       }
-      setAutoCallTriggered(true);
-    }
-    //
-    if (newScore >= 85) {
-      capturePhoto();
-    }
 
-    // 🔴 90% → Red Alert Mode
-if (newScore >= 90 && !redAlertMode) {
-  setRedAlertMode(true);
+      // 📞 High Risk → Ask before calling police
+      if (newScore >= 85 && !autoCallTriggered) {
+        const confirmCall = window.confirm(
+          "⚠️ High risk detected!\nDo you want to call Police (100)?"
+        );
+        if (confirmCall) {
+          window.location.href = "tel:100";
+        }
+        setAutoCallTriggered(true);
+      }
+      //
+      if (newScore >= 85) {
+        capturePhoto();
+      }
 
-  if (audioRef.current) {
-    audioRef.current
-      .play()
-      .then(() => {
-        console.log("Alarm started");
-      })
-      .catch((e) => {
-        console.log("Autoplay blocked:", e);
-      });
-  }
-}
+      // 🔴 90% → Red Alert Mode
+      if (newScore >= 90 && !redAlertMode) {
+        setRedAlertMode(true);
 
-    return newScore;
-  });
-};
+        if (audioRef.current) {
+          audioRef.current
+            .play()
+            .then(() => {
+              console.log("Alarm started");
+            })
+            .catch((e) => {
+              console.log("Autoplay blocked:", e);
+            });
+        }
+      }
+
+      return newScore;
+    });
+  };
 
   const resetRisk = () => {
     setRiskScore(0);
