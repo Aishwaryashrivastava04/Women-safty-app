@@ -21,7 +21,7 @@ const NearbyPolice = React.lazy(() => import("./Components/NearbyPolice"));
 const SafetyTips = React.lazy(() => import("./Components/SafetyTips"));
 const EmergencySMS = React.lazy(() => import("./Components/EmergencySMS"));
 const QuickCall = React.lazy(() => import("./Components/QuickCall"));
-const SafetyProduct = React.lazy(() => import("./Components/SafetyProduct.jsx"));
+const SafetyProduct = React.lazy(() => import("./Components/ SafetyProduct.jsx"));
 
 const Loading = () => (
   <div style={{ textAlign: "center", marginTop: "100px" }}>
