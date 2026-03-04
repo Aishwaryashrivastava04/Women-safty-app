@@ -24,7 +24,7 @@ const WalkMode = React.lazy(() => import("./Components/WalkMode"));
 const GuardianMonitor = React.lazy(() => import("./Components/GuardianMonitor"));
 const SafeZone = React.lazy(() => import("./Components/SafeZone"));
 const QuickCall = React.lazy(() => import("./Components/QuickCall"));
-const SafetyProduct = React.lazy(() => import("./Components/ SafetyProduct.jsx"));
+const SafetyProduct = React.lazy(() => import("./Components/SafetyProduct"));
 
 const Loading = () => (
   <div style={{ textAlign: "center", marginTop: "100px" }}>
