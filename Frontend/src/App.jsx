@@ -20,6 +20,9 @@ const About = React.lazy(() => import("./Components/About"));
 const NearbyPolice = React.lazy(() => import("./Components/NearbyPolice"));
 const SafetyTips = React.lazy(() => import("./Components/SafetyTips"));
 const EmergencySMS = React.lazy(() => import("./Components/EmergencySMS"));
+const WalkMode = React.lazy(() => import("./Components/WalkMode"));
+const GuardianMonitor = React.lazy(() => import("./Components/GuardianMonitor"));
+const SafeZone = React.lazy(() => import("./Components/SafeZone"));
 const QuickCall = React.lazy(() => import("./Components/QuickCall"));
 const SafetyProduct = React.lazy(() => import("./Components/ SafetyProduct.jsx"));
 
@@ -68,6 +71,9 @@ function App() {
 
           <Route path="/fake-call" element={<FakeCall />} />
           <Route path="/safety-product" element={<SafetyProduct />} />
+          <Route path="/walk-mode" element={<WalkMode />} />
+          <Route path="/guardian-monitor" element={<GuardianMonitor />} />
+          <Route path="/safe-zone" element={<SafeZone />} />
         </Routes>
       </Suspense>
     </Router>

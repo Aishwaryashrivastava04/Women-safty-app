@@ -13,6 +13,15 @@ function EmergencySMS() {
   const [sendingAll, setSendingAll] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [statusMessage, setStatusMessage] = useState("");
+  const [retryAttempted, setRetryAttempted] = useState(false);
+  const [eventLog, setEventLog] = useState(() => JSON.parse(localStorage.getItem('emergencyEventLog')) || []);
+  const [priorityContact, setPriorityContact] = useState(() => JSON.parse(localStorage.getItem('priorityContact')) || null);
+
+  // Default family contacts (Mom & Dad)
+  const defaultFamilyContacts = [
+    { name: "Mom", phone: "9934811845" },
+    { name: "Dad", phone: "6202440330" }
+  ];
   const alertAudioRef = useRef(null);
 
   useEffect(() => {
@@ -32,24 +41,40 @@ function EmergencySMS() {
 
   const getInitials = (name) => name.split(' ').map((n) => n[0]).join('').toUpperCase();
 
+  // Normalize phone number for SMS / WhatsApp
+  const normalizePhone = (phone) => {
+    if (!phone) return "";
+    return phone.toString().replace(/[^0-9]/g, "");
+  };
+
   const performAction = () => {
     if (!selectedContact || !position) return;
 
     const { lat, lng } = position;
     const message = `🚨 I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
+    const phone = normalizePhone(selectedContact.phone);
+
+    const logEntry = {
+      time: new Date().toLocaleString(),
+      contact: selectedContact.name,
+      type: actionType
+    };
+    const updatedLog = [logEntry, ...eventLog.slice(0,9)];
+    setEventLog(updatedLog);
+    localStorage.setItem('emergencyEventLog', JSON.stringify(updatedLog));
 
     try {
       if (actionType === 'sms') {
-        window.location.href = `sms:${selectedContact.phone}?body=${encodeURIComponent(message)}`;
+        window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`;
       }
 
       if (actionType === 'call') {
-        window.location.href = `tel:${selectedContact.phone}`;
+        window.location.href = `tel:${phone}`;
       }
 
       if (actionType === 'whatsapp') {
-        const whatsappURL = `https://wa.me/${selectedContact.phone}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappURL, '_blank');
+        const whatsappURL = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.location.href = whatsappURL;
       }
     } catch (err) {
       console.error("Emergency action failed:", err);
@@ -64,13 +89,39 @@ function EmergencySMS() {
     const { lat, lng } = position;
     const message = `🚨 EMERGENCY! I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
 
-    contacts.forEach((contact, index) => {
+    // Ensure Mom & Dad are prioritized first
+    const orderedContacts = [
+      ...defaultFamilyContacts,
+      ...contacts.filter(c => c.phone !== "9934811845" && c.phone !== "6202440330")
+    ];
+
+    orderedContacts.forEach((contact, index) => {
+      const phone = normalizePhone(contact.phone);
+
       setTimeout(() => {
-        window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
+        window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`;
       }, index * 1500);
     });
 
     setStatusMessage("✅ Emergency message triggered for all contacts");
+
+    // Retry once after 10 seconds if needed
+    if (!retryAttempted) {
+      setRetryAttempted(true);
+
+      setTimeout(() => {
+        orderedContacts.forEach((contact, index) => {
+          const phone = normalizePhone(contact.phone);
+
+          setTimeout(() => {
+            window.location.href = `sms:${phone}?body=${encodeURIComponent(message)}`;
+          }, index * 1500);
+        });
+
+        setStatusMessage("📡 Retrying emergency message...");
+      }, 10000);
+    }
+
     setSendingAll(false);
   };
 
@@ -180,7 +231,7 @@ function EmergencySMS() {
           <div style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.8)",
+            background: "rgba(220,38,38,0.92)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -189,7 +240,7 @@ function EmergencySMS() {
             flexDirection: "column"
           }}>
             <h1 style={{ fontSize: "60px", margin: 0 }}>{countdown}</h1>
-            <p style={{ marginTop: "10px", fontSize: "18px" }}>Sending emergency alert...</p>
+            <p style={{ marginTop: "10px", fontSize: "18px" }}>🚨 Sending emergency alerts to all contacts...</p>
             <button
               onClick={() => { setSendingAll(false); setCountdown(5); }}
               style={{
@@ -229,7 +280,20 @@ function EmergencySMS() {
               <p style={{ color: "#6B7280", margin: "0 0 24px 0" }}>
                 {actionType === 'sms' ? '📤 Send emergency SMS to' : actionType === 'call' ? '📞 Call' : '💬 Send WhatsApp to'} <strong>{selectedContact?.name}</strong>?
               </p>
-              {position && <div style={{ background: "#EFF2FF", padding: "12px", borderRadius: "10px", fontSize: "12px", color: "#6B7280", marginBottom: "20px" }}>📍 Location: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}</div>}
+              {position && (
+                <>
+                <div style={{ background: "#EFF2FF", padding: "12px", borderRadius: "10px", fontSize: "12px", color: "#6B7280", marginBottom: "10px" }}>
+                📍 Location: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+                </div>
+                <iframe
+                  title="map-preview"
+                  width="100%"
+                  height="180"
+                  style={{border:0, borderRadius:'10px', marginBottom:'20px'}}
+                  src={`https://www.google.com/maps?q=${position.lat},${position.lng}&z=15&output=embed`}
+                />
+                </>
+              )}
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "10px", background: "#E5E7EB", color: "#111827", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "pointer" }}>Cancel</button>
                 <button
@@ -252,6 +316,18 @@ function EmergencySMS() {
             </div>
           </div>
         )}
+      </div>
+      <div style={{marginTop:'40px', background:'white', padding:'20px', borderRadius:'16px', boxShadow:'0 4px 12px rgba(0,0,0,0.05)'}}>
+      <h3 style={{marginTop:0}}>📊 Emergency Event Log</h3>
+      {eventLog.length === 0 ? (
+      <p style={{fontSize:'13px', color:'#6B7280'}}>No emergency events yet</p>
+      ) : (
+       eventLog.map((e,i)=> (
+        <div key={i} style={{fontSize:'12px', marginBottom:'6px'}}>
+         {e.time} — {e.contact} ({e.type})
+        </div>
+       ))
+      )}
       </div>
       <audio
         ref={alertAudioRef}
