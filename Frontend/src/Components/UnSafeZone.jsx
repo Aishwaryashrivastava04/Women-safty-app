@@ -105,21 +105,19 @@ function UnSafeZone() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  const pulseStyle = {
-    "@keyframes pulse": {
-      "0%": { transform: "translate(-50%, -50%) scale(1)", opacity: 0.7 },
-      "50%": { transform: "translate(-50%, -50%) scale(1.15)", opacity: 0.4 },
-      "100%": { transform: "translate(-50%, -50%) scale(1)", opacity: 0.7 }
+  const keyframeStyles = `
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.4; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
     }
-  };
 
-  const flashStyle = {
-    "@keyframes flash": {
-      "0%": { background: "#fee2e2" },
-      "50%": { background: "#ef4444" },
-      "100%": { background: "#fee2e2" }
+    @keyframes flash {
+      0% { background: #fee2e2; }
+      50% { background: #ef4444; }
+      100% { background: #fee2e2; }
     }
-  };
+  `;
 
   return (
     <div
@@ -131,6 +129,7 @@ function UnSafeZone() {
         minHeight: "100vh"
       }}
     >
+      <style>{keyframeStyles}</style>
       <h2>⚠ Unsafe Zone Monitor</h2>
 
       <p style={{ color: "#555" }}>
