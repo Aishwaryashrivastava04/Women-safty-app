@@ -5,7 +5,6 @@ import sirenSound from "../assets/siren.mp3";
  function Dashboard({ onLogout = () => {} }) {
   const navigate = useNavigate();
   const audioRef = useRef(null);
-  const recognitionRef = useRef(null);
   const [tapCount, setTapCount] = useState(0);
   const tapTimerRef = useRef(null);
   const [autoSent, setAutoSent] = useState(false);
@@ -30,7 +29,6 @@ const SECRET_PIN = "1234";
   const [userEmail, setUserEmail] = useState("user@example.com");
   const [locationHistory, setLocationHistory] = useState([]);
   const [isAlarmPlaying, setIsAlarmPlaying] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [riskScore, setRiskScore] = useState(0);
   const [riskHistory, setRiskHistory] = useState([]);
   const [trackingOn, setTrackingOn] = useState(true);
@@ -43,21 +41,97 @@ const SECRET_PIN = "1234";
   const [fakeCallTriggered, setFakeCallTriggered] = useState(false);
 const [lockMode, setLockMode] = useState(false);
 const [capturedImage, setCapturedImage] = useState(null);
+// 🛰 Safe Zone System (Multiple Safe Places)
+const defaultSafeZones = [
+  { lat: 25.624614, lng: 85.057381, name: "Aishwarya Home" },
+  { lat: 25.611806, lng: 85.051361, name: "Sachin Home" },
+  { lat: 25.6159, lng: 85.0823, name: "College" }
+];
+
+// ⚠️ Unsafe Area System
+const unsafeZones = [
+  {
+    lat: 25.614688,
+    lng: 85.025777,
+    name: "Danapur Naubatpur Rd"
+  },
+  {
+    lat: 25.635810,
+    lng: 85.027923,
+    name: "Danapur Cantonment"
+  }
+];
+
+const UNSAFE_RADIUS = 0.008;
+
+const [safeZones, setSafeZones] = useState(
+  JSON.parse(localStorage.getItem("safeZones")) || defaultSafeZones
+);
+
+const SAFE_RADIUS = 0.01;
+
+useEffect(() => {
+  const existing = localStorage.getItem("safeZones");
+
+  if (!existing) {
+    localStorage.setItem("safeZones", JSON.stringify(defaultSafeZones));
+    setSafeZones(defaultSafeZones);
+  } else {
+    try {
+      const parsed = JSON.parse(existing);
+      if (Array.isArray(parsed)) {
+        setSafeZones(parsed);
+      }
+    } catch (e) {
+      setSafeZones(defaultSafeZones);
+    }
+  }
+}, []);
+
+// 🚶 Walk With Me Mode
+const [walkMode, setWalkMode] = useState(false);
+const [walkCountdown, setWalkCountdown] = useState(120);
+
+// 👨‍👩‍👧 Guardian Live Monitoring
+const [guardianMode, setGuardianMode] = useState(false);
+const [guardianLink, setGuardianLink] = useState(null);
+const [guardianPosition, setGuardianPosition] = useState(null);
+const [guardianRoute, setGuardianRoute] = useState([]);
+const [lastUpdateTime, setLastUpdateTime] = useState(null);
+const [speedSpike, setSpeedSpike] = useState(false);
+const [guardianDistance, setGuardianDistance] = useState(0);
+const [guardianTotalDistance, setGuardianTotalDistance] = useState(0);
+const [guardianStartPoint, setGuardianStartPoint] = useState(null);
+const [guardianLiveDistance, setGuardianLiveDistance] = useState(0);
+// 🧠 AI Danger Prediction
+const [dangerPrediction, setDangerPrediction] = useState("Normal Activity");
+
+// 🚨 Danger Zone Visual System
+const [dangerZoneActive, setDangerZoneActive] = useState(false);
+const [dangerCoords, setDangerCoords] = useState(null);
+
+// Prevent guardian SMS spam
+const [guardianAlertSent, setGuardianAlertSent] = useState(false);
 
   // 👇 ADD THIS FIRST
 useEffect(() => {
-  if (
-    typeof DeviceMotionEvent !== "undefined" &&
-    typeof DeviceMotionEvent.requestPermission === "function"
-  ) {
-    DeviceMotionEvent.requestPermission()
-      .then((response) => {
-        if (response === "granted") {
+  const enableMotion = async () => {
+    try {
+      if (
+        typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function"
+      ) {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === "granted") {
           console.log("Motion permission granted");
         }
-      })
-      .catch(console.error);
-  }
+      }
+    } catch (err) {
+      console.log("Motion permission not supported", err);
+    }
+  };
+
+  enableMotion();
 }, []);
 
   useEffect(() => {
@@ -104,6 +178,11 @@ const handleStealthTap = () => {
 
 const capturePhoto = async () => {
   try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.log("Camera API not supported");
+      return;
+    }
+
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user" }
     });
@@ -183,67 +262,246 @@ useEffect(() => {
 
   // 📍 Professional Auto Tracking System
   useEffect(() => {
-  if (!trackingOn) return;
+    if (!trackingOn) return;
+
+    const interval = setInterval(() => {
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+          // ⚠️ Unsafe Zone Detection
+          const insideUnsafe = unsafeZones.some((zone) => {
+            const distance = Math.sqrt(
+              Math.pow(latitude - zone.lat, 2) +
+              Math.pow(longitude - zone.lng, 2)
+            );
+            return distance <= UNSAFE_RADIUS;
+          });
+
+          if (insideUnsafe) {
+            increaseRisk(35);
+            setDangerZoneActive(true);
+            setDangerCoords({ lat: latitude, lng: longitude });
+            setScreenFlash(true);
+
+            setTimeout(() => {
+              setScreenFlash(false);
+            }, 2000);
+
+            if ("speechSynthesis" in window) {
+              const msg = new SpeechSynthesisUtterance(
+                "Warning. You have entered a high risk area. Please stay alert."
+              );
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(msg);
+            }
+          } else {
+            setDangerZoneActive(false);
+          }
+
+          // 🌙 Safe Zone Night Check
+          if (safeZones && safeZones.length > 0) {
+            const hour = new Date().getHours();
+
+            if (hour >= 22 || hour <= 5) {
+
+              const insideSafeZone = safeZones.some((zone) => {
+                const distance = Math.sqrt(
+                  Math.pow(latitude - zone.lat, 2) +
+                  Math.pow(longitude - zone.lng, 2)
+                );
+
+                return distance <= SAFE_RADIUS;
+              });
+
+              if (!insideSafeZone) {
+                if ("speechSynthesis" in window) {
+                  const msg = new SpeechSynthesisUtterance(
+                    "Warning. You are outside your safe zone at night."
+                  );
+                  window.speechSynthesis.cancel();
+                  window.speechSynthesis.speak(msg);
+                } else {
+                  alert("⚠ You are outside your safe zone at night.");
+                }
+              }
+            }
+          }
+
+          // 🧠 ML SPEED CALCULATION
+          if (lastPositionRef.current) {
+            const prev = lastPositionRef.current;
+
+            const distance = Math.sqrt(
+              Math.pow(latitude - prev.latitude, 2) +
+              Math.pow(longitude - prev.longitude, 2)
+            );
+
+            const timeDiff = (Date.now() - prev.timestamp) / 1000;
+
+            const speed = timeDiff > 0 ? distance / timeDiff * 100000 : 0;
+
+            setMovementSpeed(speed);
+
+            // 🧠 AI Threat Logic with Danger Prediction
+            if (speed > 8) {
+              setAiThreatLevel("High");
+              setAiConfidence(92);
+              setDangerPrediction("High Risk Movement");
+              increaseRisk(25);
+            } else if (speed > 4) {
+              setAiThreatLevel("Medium");
+              setAiConfidence(75);
+              setDangerPrediction("Unusual Movement");
+              increaseRisk(10);
+            } else {
+              setAiThreatLevel("Low");
+              setAiConfidence(60);
+              setDangerPrediction("Normal Activity");
+            }
+          }
+
+          lastPositionRef.current = {
+            latitude,
+            longitude,
+            timestamp: Date.now(),
+          };
+
+          setLocationHistory((prev) => [
+            {
+              time: new Date().toLocaleTimeString(),
+              link,
+            },
+            ...prev.slice(0, 4),
+          ]);
+        },
+        (err) => console.log(err),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [trackingOn, safeZones]);
+
+// 🚶 Walk Mode Logic
+useEffect(() => {
+  if (!walkMode) return;
+
+  const interval = setInterval(() => {
+    setWalkCountdown((prev) => {
+      if (prev <= 1) {
+        sendLocationToContacts();
+
+        navigator.geolocation.getCurrentPosition((pos) => {
+          console.log("Walk Mode Location:", pos.coords);
+        });
+
+        alert("🚨 No response detected. Emergency SMS sent.");
+
+        return 120;
+      }
+
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [walkMode]);
+
+// 👨‍👩‍👧 Guardian Live Monitoring System
+useEffect(() => {
+  if (!guardianMode) return;
 
   const interval = setInterval(() => {
     if (!navigator.geolocation) return;
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
 
-        // 🧠 ML SPEED CALCULATION
-        if (lastPositionRef.current) {
-          const prev = lastPositionRef.current;
+      // 📏 Distance calculation between last two points (meters)
+      if (guardianPosition) {
+        const R = 6371000;
+        const lat1 = guardianPosition.lat * Math.PI / 180;
+        const lat2 = latitude * Math.PI / 180;
+        const dLat = (latitude - guardianPosition.lat) * Math.PI / 180;
+        const dLon = (longitude - guardianPosition.lng) * Math.PI / 180;
 
-          const distance = Math.sqrt(
-            Math.pow(latitude - prev.latitude, 2) +
-            Math.pow(longitude - prev.longitude, 2)
-          );
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1) * Math.cos(lat2) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
-          const timeDiff = (Date.now() - prev.timestamp) / 1000;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
 
-          const speed = timeDiff > 0 ? distance / timeDiff * 100000 : 0;
+        setGuardianDistance(distance);
+        setGuardianTotalDistance(prev => prev + distance);
+      }
 
-          setMovementSpeed(speed);
+      // Use Google Maps with satellite view for better mobile experience
+      const liveLink = `https://maps.google.com/?q=${latitude},${longitude}&t=k`;
+      setGuardianLink(liveLink);
+      setGuardianPosition({ lat: latitude, lng: longitude });
 
-          // 🧠 AI Threat Logic
-          if (speed > 8) {
-            setAiThreatLevel("High");
-            setAiConfidence(92);
-            increaseRisk(25);
-          } else if (speed > 4) {
-            setAiThreatLevel("Medium");
-            setAiConfidence(75);
-            increaseRisk(10);
-          } else {
-            setAiThreatLevel("Low");
-            setAiConfidence(60);
-          }
-        }
+      // 📍 Set start point for total route distance
+      if (!guardianStartPoint) {
+        setGuardianStartPoint({ lat: latitude, lng: longitude });
+      }
 
-        lastPositionRef.current = {
-          latitude,
-          longitude,
-          timestamp: Date.now(),
-        };
+      // 📏 Distance from start point
+      if (guardianStartPoint) {
+        const R = 6371000;
+        const lat1 = guardianStartPoint.lat * Math.PI / 180;
+        const lat2 = latitude * Math.PI / 180;
+        const dLat = (latitude - guardianStartPoint.lat) * Math.PI / 180;
+        const dLon = (longitude - guardianStartPoint.lng) * Math.PI / 180;
 
-        setLocationHistory((prev) => [
-          {
-            time: new Date().toLocaleTimeString(),
-            link,
-          },
-          ...prev.slice(0, 4),
-        ]);
-      },
-      (err) => console.log(err),
-      { enableHighAccuracy: true }
-    );
-  }, 10000);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1) * Math.cos(lat2) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        setGuardianLiveDistance(distance);
+      }
+
+      setLastUpdateTime(new Date().toLocaleTimeString());
+
+      setGuardianRoute((prev) => [
+        ...prev.slice(-20),
+        { lat: latitude, lng: longitude }
+      ]);
+
+      if (movementSpeed > 8) {
+        setSpeedSpike(true);
+        setTimeout(() => setSpeedSpike(false), 2000);
+      }
+
+      const contacts =
+        JSON.parse(localStorage.getItem("emergencyContacts")) || [];
+
+      // Send SMS only once when guardian tracking starts
+      if (!guardianAlertSent && contacts.length > 0) {
+        contacts.forEach((c, index) => {
+          setTimeout(() => {
+            window.location.href = `sms:${c.phone}?body=${encodeURIComponent(
+              `📍 Live Tracking Started: ${liveLink}`
+            )}`;
+          }, index * 1500);
+        });
+
+        setGuardianAlertSent(true);
+      }
+    });
+  }, 5000);
 
   return () => clearInterval(interval);
-}, [trackingOn]);
+}, [guardianMode, movementSpeed, guardianPosition, guardianStartPoint]);
 
   // 📊 AI Risk System
   const increaseRisk = (value) => {
@@ -276,7 +534,10 @@ useEffect(() => {
           );
           msg.rate = 1;
           msg.pitch = 1;
+          window.speechSynthesis.cancel();
           window.speechSynthesis.speak(msg);
+        } else {
+          alert("🚨 High threat detected. Emergency protocol activated.");
         }
 
         setScreenFlash(true);
@@ -290,7 +551,11 @@ useEffect(() => {
           audioRef.current.volume = 1;
           audioRef.current.playbackRate = 1.1;
           audioRef.current.loop = true;
-          audioRef.current.play().catch(() => {});
+          try {
+            audioRef.current.play();
+          } catch (err) {
+            console.log("Audio autoplay blocked", err);
+          }
         }
 
         // Auto reset flash after 3 sec
@@ -314,7 +579,7 @@ useEffect(() => {
   };
 
   // 📩 Send Location to Contacts (improved: triggers SMS one-by-one, Android WebView compatible)
-  const sendLocationToContacts = () => {
+const sendLocationToContacts = () => {
     const contacts =
       JSON.parse(localStorage.getItem("emergencyContacts")) || [];
 
@@ -332,80 +597,20 @@ useEffect(() => {
       // Send SMS one by one with slight delay (important for WebView)
       contacts.forEach((c, index) => {
         setTimeout(() => {
-          window.location.href = `sms:${c.phone}?body=${message}`;
+          // Mobile SMS intent, fallback for desktop
+          if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            window.location.href = `sms:${c.phone}?body=${message}`;
+          } else {
+            navigator.clipboard.writeText(
+              `🚨 EMERGENCY! Send this to ${c.phone}: https://www.google.com/maps?q=${latitude},${longitude}`
+            );
+            alert("SMS link copied. Send it manually from your phone.");
+          }
         }, index * 1500);
       });
     });
   };
 
-  // 🎙 Voice AI
-  const toggleVoiceAI = async () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("Speech recognition not supported in this device.");
-      return;
-    }
-
-    // If already listening → stop
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      // 🔐 Force mic permission first (important for Android WebView)
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      alert("Microphone permission denied.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-
-    recognitionRef.current = recognition;
-
-    recognition.onstart = () => {
-      console.log("🎙 Mic started");
-      setIsListening(true);
-    };
-
-    recognition.onend = () => {
-      console.log("🎙 Mic stopped");
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event) => {
-      console.log("Speech error:", event.error);
-      setIsListening(false);
-    };
-
-    recognition.onresult = (event) => {
-      const transcript =
-        event.results[event.results.length - 1][0].transcript.toLowerCase();
-
-      console.log("Heard:", transcript);
-
-      if (transcript.includes("send my location")) {
-        sendLocationToContacts();
-      }
-
-      if (transcript.includes("call police")) {
-        window.location.href = "tel:100";
-      }
-
-      if (transcript.includes("help") || transcript.includes("danger")) {
-        increaseRisk(30);
-      }
-    };
-
-    recognition.start();
-  };
 
   // 🔊 Alarm
   const toggleAlarm = () => {
@@ -415,7 +620,11 @@ useEffect(() => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     } else {
-      audioRef.current.play();
+      try {
+        audioRef.current.play();
+      } catch (err) {
+        console.log("Audio autoplay blocked", err);
+      }
       increaseRisk(10);
     }
 
@@ -537,21 +746,26 @@ useEffect(() => {
 >
   <h4 style={{ margin: "0 0 10px 0" }}>🧠 AI Threat Analysis</h4>
 
-  <p style={{ margin: "6px 0" }}>
-    Threat Level:{" "}
-    <strong
-      style={{
-        color:
-          aiThreatLevel === "High"
-            ? "#DC2626"
-            : aiThreatLevel === "Medium"
-            ? "#F59E0B"
-            : "#16A34A",
-      }}
-    >
-      {aiThreatLevel}
-    </strong>
-  </p>
+<p style={{ margin: "6px 0" }}>
+  Threat Level:
+  <span
+    style={{
+      marginLeft: "8px",
+      padding: "4px 10px",
+      borderRadius: "10px",
+      background:
+        aiThreatLevel === "High"
+          ? "#DC2626"
+          : aiThreatLevel === "Medium"
+          ? "#F59E0B"
+          : "#16A34A",
+      color: "white",
+      fontWeight: "600"
+    }}
+  >
+    {aiThreatLevel}
+  </span>
+</p>
 
   <p style={{ margin: "6px 0" }}>
     Movement Speed: <strong>{movementSpeed.toFixed(2)} m/s</strong>
@@ -559,6 +773,9 @@ useEffect(() => {
 
   <p style={{ margin: "6px 0" }}>
     AI Confidence: <strong>{aiConfidence}%</strong>
+  </p>
+  <p style={{ margin: "6px 0" }}>
+    🧠 Prediction: <strong>{dangerPrediction}</strong>
   </p>
 </div>
         {/* PREMIUM SAFETY METRICS */}
@@ -771,6 +988,27 @@ useEffect(() => {
               accentColor="#10B981"
               onClick={() => navigate("/trackme")}
             />
+<FeatureCard
+ title="Guardian Monitor"
+ icon="👨‍👩‍👧"
+ color="#E0F2FE"
+ accentColor="#0369A1"
+ onClick={() => navigate("/guardian-monitor")}
+/>
+            <FeatureCard
+ title="Safe Zones"
+ icon="🏠"
+ color="#DCFCE7"
+ accentColor="#059669"
+ onClick={() => navigate("/safe-zone")}
+/>
+<FeatureCard
+ title="Unsafe Zones"
+ icon="⚠️"
+ color="#FEE2E2"
+ accentColor="#DC2626"
+ onClick={() => navigate("/unsafe-zone")}
+/>
             <FeatureCard
               title={isAlarmPlaying ? "Stop Alarm" : "Sound Alarm"}
               icon="🔊"
@@ -778,14 +1016,6 @@ useEffect(() => {
               accentColor="#7C5CFF"
               onClick={toggleAlarm}
               isActive={isAlarmPlaying}
-            />
-            <FeatureCard
-              title={isListening ? "Stop Mic AI" : "Start Mic AI"}
-              icon="🎙️"
-              color="#FEE2E2"
-              accentColor="#E11D48"
-              onClick={toggleVoiceAI}
-              isActive={isListening}
             />
             <FeatureCard
               title="Nearby Police"
@@ -801,6 +1031,13 @@ useEffect(() => {
               accentColor="#0369A1"
               onClick={() => navigate("/safetytips")}
             />
+           <FeatureCard
+ title="Walk Mode"
+ icon="🚶‍♀️"
+ color="#E0F2FE"
+ accentColor="#0369A1"
+ onClick={() => navigate("/walk-mode")}
+/>
             <FeatureCard
               title="Feedback"
               icon="💬"
@@ -827,14 +1064,26 @@ useEffect(() => {
   icon="📞"
   color="#FDE68A"
   accentColor="#B45309"
-  onClick={() => navigate("/fake-call")}
+  onClick={() => {
+    setTimeout(() => {
+      navigate("/fake-call");
+    }, 100);
+  }}
 />
-<FeatureCard
+                  
+                  <FeatureCard
   title="Safety Products"
   icon="🛍️"
   color="linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)"
   accentColor="#BE185D"
   onClick={() => navigate("/safety-product")}
+/>
+<FeatureCard
+ title="Quick Escape"
+ icon="🚪"
+ color="#FEE2E2"
+ accentColor="#DC2626"
+ onClick={() => window.location.href="https://google.com"}
 />
           </div>
         </div>
@@ -895,7 +1144,200 @@ useEffect(() => {
             {trackingOn ? "🟢 ON" : "⭕ OFF"}
           </button>
         </div>
+        {walkMode && (
+  <div
+    style={{
+      background: "#DBEAFE",
+      padding: "15px",
+      borderRadius: "15px",
+      marginBottom: "20px",
+      textAlign: "center"
+    }}
+  >
+    <h4>🚶 Walk With Me Active</h4>
+    <p>Next safety check in: <strong>{walkCountdown}s</strong></p>
 
+    <button
+      onClick={() => setWalkCountdown(120)}
+      style={{
+        padding: "8px 14px",
+        borderRadius: "8px",
+        border: "none",
+        background: "#22c55e",
+        color: "white",
+        fontWeight: "600"
+      }}
+    >
+      I Am Safe ✅
+    </button>
+  </div>
+)}
+
+        {guardianMode && guardianLink && (
+          <div
+            style={{
+              background: "#E0F2FE",
+              padding: "15px",
+              borderRadius: "15px",
+              marginBottom: "20px",
+              textAlign: "center"
+            }}
+          >
+            <h4>👨‍👩‍👧 Guardian Live Monitoring Active</h4>
+
+            <p style={{ fontSize: "12px" }}>
+              Your live location is being shared with guardians.
+            </p>
+
+            <a
+              href={guardianLink}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-block",
+                marginTop: "8px",
+                padding: "8px 14px",
+                background: "#0369A1",
+                color: "white",
+                borderRadius: "8px",
+                textDecoration: "none",
+                fontWeight: "600"
+              }}
+            >
+              View Live Location
+            </a>
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: "Live Safety Tracking",
+                    text: "Track my live location",
+                    url: guardianLink
+                  });
+                } else {
+                  navigator.clipboard.writeText(guardianLink);
+                  alert("Live tracking link copied 📍");
+                }
+              }}
+              style={{
+                display: "block",
+                margin: "10px auto 0",
+                padding: "8px 14px",
+                background: "#0EA5E9",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                cursor: "pointer"
+              }}
+            >
+              🔗 Share Live Tracking
+            </button>
+            {guardianPosition && (
+              <div
+                style={{
+                  marginTop: "15px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  border: speedSpike ? "3px solid #DC2626" : "2px solid #0369A1",
+                  boxShadow: speedSpike ? "0 0 20px rgba(220,38,38,0.8)" : "none",
+                  transition: "0.3s",
+                  position: "relative",
+                }}
+              >
+                <iframe
+                  key={lastUpdateTime}
+                  title="Guardian Live Map"
+                  width="100%"
+                  height="260"
+                  loading="lazy"
+                  style={{ border: "none" }}
+                  src={
+                    guardianRoute.length > 1
+                      ? `https://maps.google.com/maps?saddr=${guardianRoute[guardianRoute.length-2].lat},${guardianRoute[guardianRoute.length-2].lng}&daddr=${guardianPosition.lat},${guardianPosition.lng}&output=embed`
+                      : `https://maps.google.com/maps?q=${guardianPosition.lat},${guardianPosition.lng}&z=15&output=embed`
+                  }
+                />
+                {/* Moving marker overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "14px",
+                    height: "14px",
+                    background: "#DC2626",
+                    borderRadius: "50%",
+                    boxShadow: "0 0 12px rgba(220,38,38,0.9)",
+                    animation: "pulse 1s infinite"
+                  }}
+                />
+                {lastUpdateTime && (
+                  <div
+                    style={{
+                      background: "#F1F5F9",
+                      padding: "6px 10px",
+                      fontSize: "12px",
+                      textAlign: "center",
+                      borderTop: "1px solid #E2E8F0"
+                    }}
+                  >
+                    ⏱ Last Update: {lastUpdateTime}
+                  </div>
+                )}
+              </div>
+            )}
+            {guardianRoute.length > 1 && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  fontSize: "11px",
+                  color: "#475569",
+                  background: "#F8FAFC",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  display: "flex",
+                  justifyContent: "space-between"
+                }}
+              >
+                <span>📍 Route points: {guardianRoute.length}</span>
+                <span>📏 Last move: {guardianDistance.toFixed(1)} m</span>
+                <span>🚗 Total travel: {(guardianTotalDistance/1000).toFixed(2)} km</span>
+                <span>📍 Distance from start: {(guardianLiveDistance/1000).toFixed(2)} km</span>
+              </div>
+            )}
+          </div>
+        )}
+        {dangerZoneActive && dangerCoords && (
+          <div
+            style={{
+              background: "#FEE2E2",
+              padding: "16px",
+              borderRadius: "20px",
+              marginBottom: "20px",
+              border: "2px solid #DC2626",
+              boxShadow: "0 0 20px rgba(220,38,38,0.4)",
+              textAlign: "center"
+            }}
+          >
+            <h4 style={{ color: "#B91C1C", marginBottom: "10px" }}>
+              🚨 DANGER ZONE DETECTED
+            </h4>
+
+            <iframe
+              title="Danger Zone Map"
+              width="100%"
+              height="220"
+              style={{ border: "none", borderRadius: "12px" }}
+              src={`https://maps.google.com/maps?q=${dangerCoords.lat},${dangerCoords.lng}&z=16&output=embed`}
+            />
+
+            <p style={{ fontSize: "12px", marginTop: "8px", color: "#7F1D1D" }}>
+              You are currently inside a high‑risk area. Stay alert.
+            </p>
+          </div>
+        )}
         {/* LOCATION HISTORY */}
         {locationHistory.length > 0 && (
           <div
@@ -1056,7 +1498,54 @@ useEffect(() => {
       Clear Evidence
     </button>
   </div>
-)}
+        )}
+        {/* SAFE & UNSAFE ZONES VIEW */}
+<div
+  style={{
+    background: "white",
+    padding: "18px",
+    borderRadius: "24px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+    marginBottom: "20px",
+    border: "1px solid rgba(91, 46, 255, 0.08)"
+  }}
+>
+  <h4 style={{ marginBottom: "12px" }}>🗺 Saved Safe Places</h4>
+
+  {safeZones.length === 0 ? (
+    <p style={{ fontSize: "13px", color: "#6B7280" }}>No safe places saved.</p>
+  ) : (
+    safeZones.map((zone, index) => (
+      <div
+        key={index}
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px",
+          borderBottom: "1px solid #E5E7EB",
+          fontSize: "13px"
+        }}
+      >
+        <span>🏠 {zone.name}</span>
+
+        <a
+          href={`https://www.google.com/maps?q=${zone.lat},${zone.lng}`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "#5B2EFF", fontWeight: "600", textDecoration: "none" }}
+        >
+          View Map
+        </a>
+      </div>
+    ))
+  )}
+
+  <UnsafeZonesPanel
+    unsafeZones={unsafeZones}
+    UNSAFE_RADIUS={UNSAFE_RADIUS}
+  />
+</div>
         {/* COMMUNITY STORIES */}
 <div
   style={{
@@ -1161,5 +1650,75 @@ const FeatureCard = ({ title, icon, onClick, color = "#F3F4F6", accentColor = "#
     )}
   </div>
 );
+
+const UnsafeZonesPanel = ({ unsafeZones }) => {
+  return (
+    <div style={{ marginTop: "16px" }}>
+      <h4 style={{ marginBottom: "12px" }}>⚠ Unsafe Areas</h4>
+
+      {unsafeZones.map((zone, index) => (
+        <div
+          key={index}
+          style={{
+            padding: "14px",
+            marginBottom: "14px",
+            borderRadius: "16px",
+            border: "2px solid #FCA5A5",
+            background: "#FEF2F2",
+            boxShadow: "0 4px 12px rgba(220,38,38,0.15)",
+            position: "relative",
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "10px",
+              fontSize: "13px"
+            }}
+          >
+            <span style={{ color: "#DC2626", fontWeight: "700" }}>
+              🚨 {zone.name}
+            </span>
+
+            <a
+              href={`https://www.google.com/maps?q=${zone.lat},${zone.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "#DC2626",
+                fontWeight: "600",
+                textDecoration: "none"
+              }}
+            >
+              Open Map
+            </a>
+          </div>
+
+          <iframe
+            title={`unsafe-${index}`}
+            width="100%"
+            height="170"
+            style={{ border: "none", borderRadius: "12px" }}
+            src={`https://maps.google.com/maps?q=${zone.lat},${zone.lng}&z=15&output=embed`}
+          />
+
+          <div
+            style={{
+              marginTop: "8px",
+              fontSize: "11px",
+              color: "#7F1D1D",
+              fontWeight: "600"
+            }}
+          >
+            AI Risk Zone — Stay Alert ⚠️
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default Dashboard; 
