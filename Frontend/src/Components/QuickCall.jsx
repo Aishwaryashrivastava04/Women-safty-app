@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function QuickCall() {
@@ -9,9 +9,12 @@ function QuickCall() {
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [modal, setModal] = useState(false);
+  const [emergencyMode, setEmergencyMode] = useState(false);
+  const [countdown, setCountdown] = useState(5);
 
+
+  /* 📍 Get Location */
   const getLocation = () => {
-    setLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
@@ -19,10 +22,7 @@ function QuickCall() {
         setLastUpdated(new Date().toLocaleTimeString());
         setLoading(false);
       },
-      () => {
-        alert('❌ Location access denied');
-        setLoading(false);
-      },
+      () => setLoading(false),
       { enableHighAccuracy: true }
     );
   };
@@ -33,6 +33,53 @@ function QuickCall() {
     setContacts(saved ? JSON.parse(saved) : []);
   }, []);
 
+  /* 📍 Auto refresh location every 5s in emergency */
+  useEffect(() => {
+    if (!emergencyMode) return;
+    const interval = setInterval(() => {
+      getLocation();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [emergencyMode]);
+
+  /* 🚨 Countdown + SMS + Call + Voice */
+  useEffect(() => {
+    if (!emergencyMode) return;
+
+    if (countdown > 0) {
+      const utter = new SpeechSynthesisUtterance(`Emergency call in ${countdown}`);
+      utter.rate = 1;
+      speechSynthesis.speak(utter);
+    }
+
+    if (countdown === 0) {
+      sendSMSAll();
+      window.open('tel:112');
+      stopEmergency();
+      return;
+    }
+
+    const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [emergencyMode, countdown]);
+
+  const stopEmergency = () => {
+    setEmergencyMode(false);
+    setCountdown(5);
+  };
+
+  /* 📡 Auto SMS to all contacts */
+  const sendSMSAll = () => {
+    if (!location) return;
+    const mapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+
+    contacts.forEach((c, index) => {
+      setTimeout(() => {
+        window.open(`sms:${c.phone}?body=${encodeURIComponent(`🚨 EMERGENCY! My location: ${mapsLink}`)}`);
+      }, index * 1500);
+    });
+  };
+
   const shareLocation = (phone, type) => {
     if (!location) return;
     const mapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
@@ -42,271 +89,168 @@ function QuickCall() {
     setModal(false);
   };
 
-  const copyToClipboard = () => {
-    const mapsLink = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
-    navigator.clipboard.writeText(mapsLink);
-    alert('✅ Location link copied!');
-  };
-
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)',
-      padding: '20px 0',
-      fontFamily: "'Inter', system-ui, -apple-system"
-    },
-    wrapper: {
-      maxWidth: '900px',
-      margin: '0 auto',
-      padding: '0 20px'
-    },
-    header: {
-      background: 'linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)',
-      color: 'white',
-      padding: '24px',
-      borderRadius: '20px 20px 0 0',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    },
-    backBtn: {
-      background: 'rgba(255,255,255,0.2)',
-      border: 'none',
-      color: 'white',
-      padding: '8px 16px',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '14px',
-      fontWeight: '600',
-      transition: 'all 0.3s'
-    },
-    card: {
-      background: 'white',
-      borderRadius: '20px',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
-      padding: '32px 28px',
-      marginBottom: '20px'
-    },
-    section: {
-      marginBottom: '24px'
-    },
-    sectionTitle: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#1F2937',
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    },
-    locationInfo: {
-      background: '#F3F4F6',
-      padding: '16px 20px',
-      borderRadius: '12px',
-      marginBottom: '12px',
-      fontSize: '14px',
-      lineHeight: '1.6'
-    },
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-      gap: '12px',
-      marginBottom: '16px'
-    },
-    btn: {
-      padding: '12px 16px',
-      border: 'none',
-      borderRadius: '12px',
-      fontSize: '13px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      outline: 'none'
-    },
-    emergencyBtn: {
-      background: 'linear-gradient(135deg, #E11D48, #BE122D)',
-      color: 'white'
-    },
-    primaryBtn: {
-      background: 'linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)',
-      color: 'white'
-    },
-    secondaryBtn: {
-      background: '#E5E7EB',
-      color: '#1F2937'
-    },
-    contactGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: '16px'
-    },
-    contactCard: {
-      background: 'linear-gradient(135deg, #F8FAFF 0%, #EFF2FF 100%)',
-      border: '1px solid #E5E7EB',
-      padding: '16px',
-      borderRadius: '12px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-    },
-    avatar: {
-      width: '48px',
-      height: '48px',
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '20px',
-      fontWeight: '700',
-      margin: '0 auto 8px'
-    },
-    name: {
-      fontSize: '14px',
-      fontWeight: '600',
-      color: '#1F2937',
-      marginBottom: '4px'
-    },
-    phone: {
-      fontSize: '12px',
-      color: '#6B7280'
-    },
-    modal: {
-      display: modal ? 'flex' : 'none',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.5)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    },
-    modalContent: {
-      background: 'white',
-      borderRadius: '20px',
-      padding: '32px',
-      maxWidth: '380px',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-    },
-    modalTitle: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#1F2937',
-      marginBottom: '16px'
-    },
-    modalText: {
-      fontSize: '14px',
-      color: '#6B7280',
-      marginBottom: '24px'
-    },
-    modalButtons: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '8px'
-    }
-  };
-
   return (
-    <div style={styles.container}>
-      <style>{`
-        button:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
-        [data-hover]:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(91, 46, 255, 0.2); }
-      `}</style>
-      <div style={styles.wrapper}>
-        <div style={styles.header}>
-          <div style={{ fontSize: '24px', fontWeight: '700' }}>📲 Quick Call & Share</div>
-          <button style={styles.backBtn} onClick={() => navigate('/dashboard')} onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: emergencyMode
+          ? 'linear-gradient(135deg,#7f1d1d,#dc2626)'
+          : 'linear-gradient(180deg,#F8FAFF 0%,#EFF2FF 50%)',
+        padding: '20px 0',
+        fontFamily: 'Inter, system-ui',
+        transition: 'all 0.5s ease'
+      }}
+    >
+
+
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+
+        {/* HEADER */}
+        <div
+          style={{
+            background: emergencyMode
+              ? 'rgba(255,255,255,0.15)'
+              : 'linear-gradient(135deg,#5B2EFF,#7C5CFF)',
+            color: 'white',
+            padding: '24px',
+            borderRadius: '20px',
+            display: 'flex',
+            justifyContent: 'space-between'
+          }}
+        >
+          <div style={{ fontSize: '22px', fontWeight: 700 }}>
+            📲 Smart Quick Emergency
+          </div>
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
             ← Back
           </button>
         </div>
 
-        <div style={styles.card}>
+        <div
+          style={{
+            background: 'white',
+            borderRadius: '20px',
+            padding: '30px',
+            marginTop: '20px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+          }}
+        >
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>📍</div>
-              <div style={{ color: '#6B7280' }}>Fetching your location...</div>
-            </div>
+            <div style={{ textAlign: 'center', padding: 40 }}>📍 Getting location...</div>
           ) : location ? (
             <>
-              {/* Location Section */}
-              <div style={styles.section}>
-                <div style={styles.sectionTitle}>📍 Your Current Location</div>
-                <div style={styles.locationInfo}>
-                  <div>🧭 <strong>Latitude:</strong> {location.latitude.toFixed(6)}</div>
-                  <div style={{ marginTop: '4px' }}>🧭 <strong>Longitude:</strong> {location.longitude.toFixed(6)}</div>
-                  <div style={{ marginTop: '4px' }}>📏 <strong>Accuracy:</strong> ±{Math.round(location.accuracy)}m</div>
-                  <div style={{ marginTop: '4px' }}>⏱️ <strong>Last Updated:</strong> {lastUpdated}</div>
-                </div>
+              <h4>📍 Live Location</h4>
+              <p>Lat: {location.latitude.toFixed(5)}</p>
+              <p>Lng: {location.longitude.toFixed(5)}</p>
+              <p>Accuracy: ±{Math.round(location.accuracy)}m</p>
+              <p>Updated: {lastUpdated}</p>
+
+              {/* 🛰️ Live Google Map Embed */}
+              <div style={{ margin: '20px 0' }}>
+                <iframe
+                  width="100%"
+                  height="250"
+                  style={{ borderRadius: 12 }}
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${location.latitude},${location.longitude}&z=15&output=embed`}
+                ></iframe>
               </div>
 
-              {/* Quick Actions */}
-              <div style={styles.section}>
-                <div style={styles.sectionTitle}>⚡ Quick Actions</div>
-                <div style={styles.grid}>
-                  <button style={{ ...styles.btn, ...styles.emergencyBtn }} onClick={() => window.open('tel:112')}>
-                    📞 Emergency (112)
-                  </button>
-                  <button style={{ ...styles.btn, ...styles.primaryBtn }} onClick={getLocation}>
-                    🔄 Refresh
-                  </button>
-                  <button style={{ ...styles.btn, ...styles.secondaryBtn }} onClick={copyToClipboard}>
-                    🔗 Copy Link
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => setEmergencyMode(true)}
+                style={{
+                  padding: 14,
+                  background: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  width: '100%'
+                }}
+              >
+                🚨 Emergency Call (Auto in {emergencyMode ? countdown : 5}s)
+              </button>
 
-              {/* Emergency Contacts */}
+              {emergencyMode && (
+                <button
+                  onClick={stopEmergency}
+                  style={{
+                    marginTop: 10,
+                    padding: 10,
+                    background: '#111827',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 8,
+                    width: '100%'
+                  }}
+                >
+                  🛑 Cancel Emergency
+                </button>
+              )}
+
+              {/* CONTACTS */}
               {contacts.length > 0 && (
-                <div style={styles.section}>
-                  <div style={styles.sectionTitle}>👥 Emergency Contacts ({contacts.length})</div>
-                  <div style={styles.contactGrid}>
+                <div style={{ marginTop: 30 }}>
+                  <h4>👥 Emergency Contacts</h4>
+                  <div style={{ display: 'grid', gap: 10 }}>
                     {contacts.map((contact, idx) => (
                       <div
                         key={idx}
-                        style={styles.contactCard}
                         onClick={() => { setSelectedContact(contact); setModal(true); }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                        style={{
+                          padding: 12,
+                          borderRadius: 10,
+                          background: '#EEF2FF',
+                          cursor: 'pointer'
+                        }}
                       >
-                        <div style={styles.avatar}>{contact.name.charAt(0).toUpperCase()}</div>
-                        <div style={styles.name}>{contact.name}</div>
-                        <div style={styles.phone}>{contact.phone}</div>
+                        {contact.name} ({contact.phone})
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Modal */}
-              <div style={styles.modal} onClick={() => setModal(false)}>
-                <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                  <div style={styles.modalTitle}>📲 Contact {selectedContact?.name}</div>
-                  <div style={styles.modalText}>How would you like to reach out?</div>
-                  <div style={styles.modalButtons}>
-                    <button
-                      style={{ ...styles.btn, ...styles.emergencyBtn, fontSize: '12px', padding: '10px' }}
-                      onClick={() => shareLocation(selectedContact?.phone, 'call')}
-                    >
-                      📞 Call
-                    </button>
-                    <button
-                      style={{ ...styles.btn, background: '#059669', color: 'white', fontSize: '12px', padding: '10px' }}
-                      onClick={() => shareLocation(selectedContact?.phone, 'sms')}
-                    >
-                      💬 SMS
-                    </button>
-                    <button
-                      style={{ ...styles.btn, background: '#0084FF', color: 'white', fontSize: '12px', padding: '10px' }}
-                      onClick={() => shareLocation(selectedContact?.phone, 'whatsapp')}
-                    >
-                      💚 WhatsApp
-                    </button>
+              {modal && (
+                <div
+                  onClick={() => setModal(false)}
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      background: 'white',
+                      padding: 25,
+                      borderRadius: 15
+                    }}
+                  >
+                    <h4>Contact {selectedContact?.name}</h4>
+                    <button onClick={() => shareLocation(selectedContact?.phone, 'call')}>📞 Call</button>
+                    <button onClick={() => shareLocation(selectedContact?.phone, 'sms')}>💬 SMS</button>
+                    <button onClick={() => shareLocation(selectedContact?.phone, 'whatsapp')}>💚 WhatsApp</button>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           ) : null}
         </div>

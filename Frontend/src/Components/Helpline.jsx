@@ -37,6 +37,7 @@ const helplineCategories = [
 function Helpline() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const copyToClipboard = (number) => {
     navigator.clipboard.writeText(number);
@@ -46,6 +47,27 @@ function Helpline() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F5F7FF 0%, #F0F4FF 100%)", padding: "20px", fontFamily: "'Inter', system-ui" }}>
+      {/* 🚨 Sticky National Emergency */}
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 2000,
+        background: "#B91C1C",
+        color: "white",
+        padding: "10px",
+        textAlign: "center",
+        fontWeight: "800",
+        letterSpacing: "1px",
+        cursor: "pointer"
+      }}
+        onClick={() => {
+          if (navigator.vibrate) navigator.vibrate(200);
+          window.location.href = "tel:112";
+        }}
+      >
+        🚨 TAP HERE FOR NATIONAL EMERGENCY (112)
+      </div>
+
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg, #DC2626 0%, #E73C0E 100%)", color: "white", padding: "35px 25px", borderRadius: "24px", marginBottom: "35px", boxShadow: "0 12px 35px rgba(220, 38, 38, 0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "1200px", margin: "0 auto" }}>
@@ -66,6 +88,25 @@ function Helpline() {
 
       {/* Main Content */}
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        {/* 🔍 Search Bar */}
+        <div style={{ marginBottom: "30px", textAlign: "center" }}>
+          <input
+            type="text"
+            placeholder="Search helpline..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              padding: "14px",
+              borderRadius: "30px",
+              border: "2px solid #E5E7EB",
+              outline: "none",
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
+            }}
+          />
+        </div>
         {helplineCategories.map((cat, catIdx) => (
           <div key={catIdx} style={{ marginBottom: "40px" }}>
             {/* Category Title */}
@@ -75,7 +116,12 @@ function Helpline() {
 
             {/* Helplines Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
-              {cat.helplines.map((line, idx) => (
+              {cat.helplines
+                .filter(line =>
+                  line.name.toLowerCase().includes(searchTerm) ||
+                  line.number.includes(searchTerm)
+                )
+                .map((line, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -119,6 +165,9 @@ function Helpline() {
                     {/* Call Button */}
                     <a
                       href={`tel:${line.number}`}
+                      onClick={() => {
+                        if (navigator.vibrate) navigator.vibrate(150);
+                      }}
                       style={{
                         flex: 1,
                         display: "inline-flex",
@@ -133,13 +182,13 @@ function Helpline() {
                         fontWeight: "700",
                         fontSize: "14px",
                         boxShadow: "0 6px 16px rgba(220, 38, 38, 0.3)",
-                        transition: "0.2s",
+                        transition: "0.3s ease",
                         border: "none",
                         cursor: "pointer"
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = "translateY(-2px)";
-                        e.currentTarget.style.boxShadow = "0 10px 24px rgba(220, 38, 38, 0.4)";
+                        e.currentTarget.style.boxShadow = "0 12px 30px rgba(220,38,38,0.6)";
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";

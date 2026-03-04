@@ -11,6 +11,20 @@ import sirenSound from "../assets/siren.mp3";
   const [autoSent, setAutoSent] = useState(false);
   const [autoCallTriggered, setAutoCallTriggered] = useState(false);
   const [redAlertMode, setRedAlertMode] = useState(false);
+const [screenFlash, setScreenFlash] = useState(false);
+const [showPinInput, setShowPinInput] = useState(false);
+const [blinkRed, setBlinkRed] = useState(false);
+useEffect(() => {
+  if (!redAlertMode) return;
+
+  const interval = setInterval(() => {
+    setBlinkRed(prev => !prev);
+  }, 400);
+
+  return () => clearInterval(interval);
+}, [redAlertMode]);
+const [enteredPin, setEnteredPin] = useState("");
+const SECRET_PIN = "1234";
   const [stories, setStories] = useState([]);
   const [userName, setUserName] = useState("User");
   const [userEmail, setUserEmail] = useState("user@example.com");
@@ -251,6 +265,40 @@ useEffect(() => {
         setAutoCallTriggered(true);
       }
 
+      // 🔴 90% → Full Emergency Mode
+      if (newScore >= 90 && !redAlertMode) {
+        setRedAlertMode(true);
+
+        // 🤖 AI Voice Warning
+        if ("speechSynthesis" in window) {
+          const msg = new window.SpeechSynthesisUtterance(
+            "Warning. High threat detected. Emergency protocol activated."
+          );
+          msg.rate = 1;
+          msg.pitch = 1;
+          window.speechSynthesis.speak(msg);
+        }
+
+        setScreenFlash(true);
+        setShowPinInput(true);
+
+        if (navigator.vibrate) {
+          navigator.vibrate([300, 200, 300, 200, 600]);
+        }
+
+        if (audioRef.current) {
+          audioRef.current.volume = 1;
+          audioRef.current.playbackRate = 1.1;
+          audioRef.current.loop = true;
+          audioRef.current.play().catch(() => {});
+        }
+
+        // Auto reset flash after 3 sec
+        setTimeout(() => {
+          setScreenFlash(false);
+        }, 3000);
+      }
+
       // 📸 80% → Capture Evidence
       if (newScore >= 80) {
         capturePhoto();
@@ -383,7 +431,9 @@ useEffect(() => {
 }}
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%, #E8EFFF 100%)",
+        background: redAlertMode && blinkRed
+          ? "#7F1D1D"
+          : "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%, #E8EFFF 100%)",
         fontFamily: "'Inter', 'Segoe UI', -apple-system, sans-serif",
         paddingBottom: "100px",
       }}
@@ -456,6 +506,22 @@ useEffect(() => {
           👤
         </div>
       </div>
+
+      {redAlertMode && (
+        <div
+          style={{
+            background: "#DC2626",
+            color: "white",
+            textAlign: "center",
+            padding: "10px",
+            fontWeight: "800",
+            letterSpacing: "1px",
+            animation: "pulse 1s infinite"
+          }}
+        >
+          🚨 HIGH THREAT DETECTED – EMERGENCY MODE ACTIVE 🚨
+        </div>
+      )}
 
       <div style={{ padding: "24px 16px" }}>
         {/* 🧠 AI THREAT ANALYSIS */}
@@ -729,6 +795,13 @@ useEffect(() => {
               onClick={() => navigate("/nearby-police")}
             />
             <FeatureCard
+              title="Safety Tips"
+              icon="🛡️"
+              color="linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)"
+              accentColor="#0369A1"
+              onClick={() => navigate("/safetytips")}
+            />
+            <FeatureCard
               title="Feedback"
               icon="💬"
               color="#FEF3C7"
@@ -755,6 +828,13 @@ useEffect(() => {
   color="#FDE68A"
   accentColor="#B45309"
   onClick={() => navigate("/fake-call")}
+/>
+<FeatureCard
+  title="Safety Products"
+  icon="🛍️"
+  color="linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%)"
+  accentColor="#BE185D"
+  onClick={() => navigate("/safety-product")}
 />
           </div>
         </div>
@@ -871,40 +951,69 @@ useEffect(() => {
             </div>
           </div>
         )}
-        {lockMode && (
+        {screenFlash && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(220,38,38,0.6)",
+              zIndex: 9998,
+              animation: "flash 0.4s alternate 6"
+            }}
+          />
+        )}
+        {showPinInput && (
   <div
     style={{
       position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      background: "rgba(220, 38, 38, 0.95)",
+      inset: 0,
+      background: "rgba(0,0,0,0.95)",
       color: "white",
       zIndex: 9999,
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      animation: "pulse 1s infinite"
+      textAlign: "center"
     }}
   >
-    <h1 style={{ fontSize: "32px", marginBottom: "20px" }}>
-      🚨 EMERGENCY MODE ACTIVE 🚨
-    </h1>
+    <h1 style={{ marginBottom: "20px" }}>🔐 Enter PIN to Exit Emergency</h1>
+
+    <input
+      type="password"
+      value={enteredPin}
+      onChange={(e) => setEnteredPin(e.target.value)}
+      placeholder="Enter PIN"
+      style={{
+        padding: "12px",
+        borderRadius: "8px",
+        border: "none",
+        fontSize: "16px",
+        textAlign: "center",
+        marginBottom: "15px"
+      }}
+    />
 
     <button
-      onClick={() => setLockMode(false)}
+      onClick={() => {
+        if (enteredPin === SECRET_PIN) {
+          setShowPinInput(false);
+          setEnteredPin("");
+          setRedAlertMode(false);
+        } else {
+          alert("Wrong PIN");
+        }
+      }}
       style={{
-        padding: "12px 20px",
-        borderRadius: "10px",
+        padding: "10px 20px",
+        borderRadius: "8px",
         border: "none",
-        background: "white",
-        color: "red",
+        background: "#22c55e",
+        color: "white",
         fontWeight: "bold"
       }}
     >
-      Deactivate
+      Unlock
     </button>
   </div>
 )}
@@ -1016,26 +1125,27 @@ const FeatureCard = ({ title, icon, onClick, color = "#F3F4F6", accentColor = "#
     onClick={onClick}
     style={{
       background: color,
+      backdropFilter: "blur(10px)",
       padding: "22px 16px",
       borderRadius: "22px",
       textAlign: "center",
       cursor: "pointer",
-      boxShadow: isActive 
+      boxShadow: isActive
         ? `0 10px 28px rgba(91, 46, 255, 0.2)`
         : "0 6px 20px rgba(0,0,0,0.05)",
-      transition: "0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+      transition: "0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
       transform: "translateY(0)",
       border: isActive ? `2px solid ${accentColor}` : `1px solid rgba(0,0,0,0.05)`,
       position: "relative",
       overflow: "hidden",
     }}
     onMouseEnter={(e) => {
-      e.currentTarget.style.transform = "translateY(-6px)";
+      e.currentTarget.style.transform = "translateY(-8px) scale(1.03)";
       e.currentTarget.style.boxShadow = "0 16px 32px rgba(91, 46, 255, 0.25)";
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.transform = "translateY(0)";
-      e.currentTarget.style.boxShadow = isActive 
+      e.currentTarget.style.transform = "translateY(0) scale(1)";
+      e.currentTarget.style.boxShadow = isActive
         ? "0 10px 28px rgba(91, 46, 255, 0.2)"
         : "0 6px 20px rgba(0,0,0,0.05)";
     }}

@@ -21,6 +21,7 @@ const NearbyPolice = React.lazy(() => import("./Components/NearbyPolice"));
 const SafetyTips = React.lazy(() => import("./Components/SafetyTips"));
 const EmergencySMS = React.lazy(() => import("./Components/EmergencySMS"));
 const QuickCall = React.lazy(() => import("./Components/QuickCall"));
+const SafetyProduct = React.lazy(() => import("./Components/SafetyProduct"));
 
 const Loading = () => (
   <div style={{ textAlign: "center", marginTop: "100px" }}>
@@ -66,6 +67,7 @@ function App() {
           <Route path="/quickcall" element={<QuickCall />} />
 
           <Route path="/fake-call" element={<FakeCall />} />
+          <Route path="/safety-product" element={<SafetyProduct />} />
         </Routes>
       </Suspense>
     </Router>

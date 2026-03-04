@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 function TrackMe() {
@@ -7,22 +7,66 @@ function TrackMe() {
   const [locationHistory, setLocationHistory] = useState(() => JSON.parse(localStorage.getItem("trackingHistory")) || []);
   const [tracking, setTracking] = useState(false);
   const [status, setStatus] = useState("");
+  const [distance, setDistance] = useState(0);
+  const [speed, setSpeed] = useState(0);
+  const lastPositionRef = useRef(null);
+  const [speedAlert, setSpeedAlert] = useState(false);
+  const mapRef = useRef(null);
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   const updateLocation = () => {
-    setStatus("📍 Getting location...");
+    setStatus("📡 Fetching live GPS...");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
         const time = new Date().toLocaleTimeString();
         const newLoc = { lat: latitude, lng: longitude, accuracy, time };
+
+        if (lastPositionRef.current) {
+          const prev = lastPositionRef.current;
+          const dist = calculateDistance(prev.lat, prev.lng, latitude, longitude);
+          const timeDiff = (Date.now() - prev.timestamp) / 1000;
+          const currentSpeed = timeDiff > 0 ? (dist * 1000) / timeDiff : 0;
+
+          setDistance((d) => d + dist);
+          setSpeed(currentSpeed);
+          if (currentSpeed > 8) {
+            setSpeedAlert(true);
+            setTimeout(() => setSpeedAlert(false), 3000);
+          }
+        }
+
+        lastPositionRef.current = {
+          lat: latitude,
+          lng: longitude,
+          timestamp: Date.now(),
+        };
+
         setLocation(newLoc);
         const updated = [...locationHistory, newLoc].slice(-20);
         setLocationHistory(updated);
         localStorage.setItem("trackingHistory", JSON.stringify(updated));
-        setStatus("✅ Location updated");
-        setTimeout(() => setStatus(""), 3000);
+
+        setStatus("✅ Live location updated");
+        setTimeout(() => setStatus(""), 2000);
       },
-      () => { setStatus("⚠️ Permission denied"); setTimeout(() => setStatus(""), 3000); },
+      () => {
+        setStatus("⚠️ Location permission denied");
+        setTimeout(() => setStatus(""), 2000);
+      },
       { enableHighAccuracy: true }
     );
   };
@@ -30,88 +74,181 @@ function TrackMe() {
   useEffect(() => {
     if (!tracking) return;
     updateLocation();
-    const interval = setInterval(updateLocation, 10000);
+    const interval = setInterval(updateLocation, 8000);
     return () => clearInterval(interval);
   }, [tracking]);
 
-  const shareVia = (type) => {
-    if (!location) { setStatus("⚠️ Get location first"); return; }
-    const link = `https://maps.google.com/?q=${location.lat},${location.lng}`;
-    const message = `🚨 My Location: ${link}`;
-    if (type === 'sms') {
-      const contacts = JSON.parse(localStorage.getItem("emergencyContacts")) || [];
-      const phones = contacts.map(c => c.phone).join(",");
-      if (phones) window.location.href = `sms:${phones}?body=${encodeURIComponent(message)}`;
-    } else if (type === 'whatsapp') {
-      window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  useEffect(() => {
+    if (tracking && window.speechSynthesis) {
+      const msg = new SpeechSynthesisUtterance("Live tracking active");
+      msg.rate = 1;
+      msg.pitch = 1;
+      window.speechSynthesis.speak(msg);
     }
-  };
+  }, [tracking]);
 
-  const clearHistory = () => {
-    setLocationHistory([]);
-    localStorage.removeItem("trackingHistory");
-    setStatus("✅ History cleared");
-    setTimeout(() => setStatus(""), 2000);
+  const shareViaSMS = () => {
+    if (!location) return;
+    const link = `https://maps.google.com/?q=${location.lat},${location.lng}`;
+    const message = `🚨 Live Tracking Location:\n${link}`;
+    const contacts = JSON.parse(localStorage.getItem("emergencyContacts")) || [];
+
+    contacts.forEach((c, index) => {
+      setTimeout(() => {
+        window.location.href = `sms:${c.phone}?body=${encodeURIComponent(message)}`;
+      }, index * 1200);
+    });
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)", padding: "20px", fontFamily: "'Inter', system-ui" }}>
-      <div style={{ background: "linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)", color: "white", padding: "30px 20px", borderRadius: "24px", marginBottom: "30px", boxShadow: "0 10px 30px rgba(91, 46, 255, 0.2)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "900px", margin: "0 auto" }}>
-          <h2 style={{ margin: 0, fontSize: "28px", fontWeight: "800" }}>📍 Real-Time Tracker</h2>
-          <button onClick={() => navigate("/dashboard")} style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "10px 16px", borderRadius: "12px", cursor: "pointer", fontWeight: "600" }}>← Back</button>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: tracking
+          ? "linear-gradient(135deg, #0f172a, #1e3a8a)"
+          : "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)",
+        padding: "20px",
+        fontFamily: "'Inter', system-ui",
+        transition: "0.5s ease",
+        border: speedAlert ? "6px solid red" : "6px solid transparent",
+        boxShadow: speedAlert ? "0 0 40px red" : "none"
+      }}
+    >
+      <div
+        style={{
+          background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+          color: "white",
+          padding: "28px",
+          borderRadius: "24px",
+          marginBottom: "30px",
+          boxShadow: tracking
+            ? "0 0 40px rgba(37,99,235,0.6)"
+            : "0 10px 30px rgba(37,99,235,0.2)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <h2 style={{ margin: 0, fontWeight: "800" }}>🛰️ Advanced Live Tracker</h2>
+          <button
+            onClick={() => navigate("/dashboard")}
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              padding: "8px 14px",
+              borderRadius: "10px",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            ← Back
+          </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        {/* CURRENT LOCATION */}
-        <div style={{ background: "white", padding: "28px", borderRadius: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", marginBottom: "24px", border: "1px solid rgba(91,46,255,0.08)" }}>
-          <h3 style={{ margin: "0 0 20px 0", fontSize: "18px", fontWeight: "700" }}>📌 Current Location</h3>
-          {location ? (
-            <div style={{ display: "grid", gap: "12px" }}>
-              <div style={{ background: "#EFF2FF", padding: "14px", borderRadius: "12px", fontSize: "13px" }}>
-                <div style={{ fontWeight: "600", color: "#5B2EFF", marginBottom: "6px" }}>Latitude: {location.lat.toFixed(6)}</div>
-                <div style={{ fontWeight: "600", color: "#5B2EFF" }}>Longitude: {location.lng.toFixed(6)}</div>
-                <div style={{ color: "#6B7280", marginTop: "6px", fontSize: "12px" }}>Accuracy: ±{location.accuracy.toFixed(0)}m</div>
-              </div>
-              <a href={`https://maps.google.com/?q=${location.lat},${location.lng}`} target="_blank" rel="noreferrer" style={{ padding: "10px", background: "linear-gradient(135deg, #5B2EFF, #7C5CFF)", color: "white", borderRadius: "10px", textAlign: "center", textDecoration: "none", fontWeight: "600", cursor: "pointer" }}>🗺️ View on Google Maps</a>
-            </div>
-          ) : (
-            <div style={{ background: "#FEF3C7", color: "#92400E", padding: "14px", borderRadius: "10px", fontSize: "13px", fontWeight: "500" }}>📍 Click "Get Location" to start tracking</div>
-          )}
+      {location && (
+        <div
+          style={{
+            background: "white",
+            padding: "24px",
+            borderRadius: "20px",
+            marginBottom: "24px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+          }}
+        >
+          <h4>📍 Current Position</h4>
+          <p><strong>Lat:</strong> {location.lat.toFixed(6)}</p>
+          <p><strong>Lng:</strong> {location.lng.toFixed(6)}</p>
+          <p><strong>Accuracy:</strong> ±{location.accuracy.toFixed(0)}m</p>
+          <p>
+            <strong>Speed:</strong>
+            <span style={{ color: speed > 8 ? "red" : "black", fontWeight: "700" }}>
+              {speed.toFixed(2)} m/s
+            </span>
+          </p>
+          <p><strong>Total Distance:</strong> {distance.toFixed(3)} km</p>
         </div>
+      )}
 
-        {/* CONTROLS */}
-        <div style={{ background: "white", padding: "20px", borderRadius: "20px", marginBottom: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", border: "1px solid rgba(91,46,255,0.08)" }}>
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-            <button onClick={updateLocation} style={{ padding: "12px", background: "#E0F2FE", color: "#0084FF", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#BAE6FD"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#E0F2FE"; }}>📡 Get Location</button>
-            <button onClick={() => setTracking(!tracking)} style={{ padding: "12px", background: tracking ? "#FEE2E2" : "#DCFCE7", color: tracking ? "#E11D48" : "#10B981", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.8"; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}>{tracking ? "⏹️ Stop Tracking" : "▶️ Start Tracking"}</button>
-            <button onClick={() => shareVia('sms')} style={{ padding: "12px", background: "#E0F2FE", color: "#0084FF", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#BAE6FD"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#E0F2FE"; }}>📤 Share SMS</button>
-            <button onClick={() => shareVia('whatsapp')} style={{ padding: "12px", background: "#DCFCE7", color: "#10B981", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#BBFBDE"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#DCFCE7"; }}>💬 WhatsApp</button>
-          </div>
+      {location && (
+        <div
+          style={{
+            background: "white",
+            padding: "16px",
+            borderRadius: "20px",
+            marginBottom: "24px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+            overflow: "hidden"
+          }}
+        >
+          <h4>🗺 Live Map View</h4>
+          <iframe
+            ref={mapRef}
+            title="Live Map"
+            width="100%"
+            height="250"
+            style={{ borderRadius: "12px", border: "none" }}
+            src={`https://maps.google.com/maps?q=${location.lat},${location.lng}&z=15&output=embed`}
+            allowFullScreen
+          />
         </div>
+      )}
 
-        {/* STATUS */}
-        {status && <div style={{ background: "#DCFCE7", color: "#15803D", padding: "12px", borderRadius: "10px", marginBottom: "20px", fontWeight: "500", textAlign: "center" }}>{status}</div>}
+      <div style={{ display: "grid", gap: "12px" }}>
+        <button
+          onClick={updateLocation}
+          style={{
+            padding: "14px",
+            background: "#dbeafe",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          📡 Get Location
+        </button>
 
-        {/* HISTORY */}
-        {locationHistory.length > 0 && (
-          <div style={{ background: "white", padding: "28px", borderRadius: "24px", boxShadow: "0 8px 24px rgba(0,0,0,0.06)", border: "1px solid rgba(91,46,255,0.08)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>📋 Tracking History ({locationHistory.length})</h3>
-              <button onClick={clearHistory} style={{ padding: "8px 12px", background: "#FEE2E2", color: "#E11D48", border: "none", borderRadius: "8px", fontWeight: "600", cursor: "pointer", fontSize: "12px" }}>🗑️ Clear</button>
-            </div>
-            <div style={{ maxHeight: "300px", overflowY: "auto", display: "grid", gap: "10px" }}>
-              {locationHistory.slice().reverse().map((loc, i) => (
-                <a key={i} href={`https://maps.google.com/?q=${loc.lat},${loc.lng}`} target="_blank" rel="noreferrer" style={{ padding: "12px", background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "10px", textDecoration: "none", color: "#111827", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", transition: "0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#EFF2FF"; e.currentTarget.style.borderColor = "#5B2EFF"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#F9FAFB"; e.currentTarget.style.borderColor = "#E5E7EB"; }}>
-                  <span style={{ fontSize: "13px" }}>⏰{loc.time}</span>
-                  <span style={{ fontSize: "12px", color: "#5B2EFF", fontWeight: "600" }}>View →</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+        <button
+          onClick={() => setTracking(!tracking)}
+          style={{
+            padding: "14px",
+            background: tracking ? "#fee2e2" : "#dcfce7",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          {tracking ? "⏹ Stop Tracking" : "▶ Start Tracking"}
+        </button>
+
+        <button
+          onClick={shareViaSMS}
+          style={{
+            padding: "14px",
+            background: "#e0f2fe",
+            border: "none",
+            borderRadius: "12px",
+            fontWeight: "700",
+            cursor: "pointer",
+          }}
+        >
+          📤 Send Live Location (SMS)
+        </button>
       </div>
+
+      {status && (
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "12px",
+            background: "#dcfce7",
+            borderRadius: "10px",
+            textAlign: "center",
+          }}
+        >
+          {status}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function EmergencySMS() {
@@ -6,9 +6,14 @@ function EmergencySMS() {
   const [contacts, setContacts] = useState(() => JSON.parse(localStorage.getItem('emergencyContacts')) || []);
   const [position, setPosition] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [locationError, setLocationError] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [actionType, setActionType] = useState('sms');
+  const [sendingAll, setSendingAll] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const [statusMessage, setStatusMessage] = useState("");
+  const alertAudioRef = useRef(null);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -17,7 +22,9 @@ function EmergencySMS() {
         setPosition({ lat: latitude, lng: longitude });
         setLoading(false);
       },
-      () => {
+      (err) => {
+        console.error("Location error:", err);
+        setLocationError(true);
         setLoading(false);
       }
     );
@@ -51,6 +58,53 @@ function EmergencySMS() {
     setShowModal(false);
   };
 
+  const sendToAllContacts = () => {
+    if (!position || contacts.length === 0) return;
+
+    const { lat, lng } = position;
+    const message = `🚨 EMERGENCY! I need help! My location: https://maps.google.com/?q=${lat},${lng}`;
+
+    contacts.forEach((contact, index) => {
+      setTimeout(() => {
+        window.location.href = `sms:${contact.phone}?body=${encodeURIComponent(message)}`;
+      }, index * 1500);
+    });
+
+    setStatusMessage("✅ Emergency message triggered for all contacts");
+    setSendingAll(false);
+  };
+
+  useEffect(() => {
+    if (!sendingAll) return;
+
+    if (alertAudioRef.current) {
+      alertAudioRef.current.currentTime = 0;
+      alertAudioRef.current.play().catch(() => {});
+    }
+
+    if (countdown === 0) {
+      sendToAllContacts();
+      setCountdown(5);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [sendingAll, countdown]);
+
+  useEffect(() => {
+    if (!statusMessage) return;
+
+    const timer = setTimeout(() => {
+      setStatusMessage("");
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [statusMessage]);
+
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #F8FAFF 0%, #EFF2FF 50%)", padding: "20px", fontFamily: "'Inter', system-ui" }}>
       <div style={{ background: "linear-gradient(135deg, #5B2EFF 0%, #7C5CFF 100%)", color: "white", padding: "30px 20px", borderRadius: "24px", marginBottom: "30px", boxShadow: "0 10px 30px rgba(91, 46, 255, 0.2)" }}>
@@ -61,7 +115,18 @@ function EmergencySMS() {
       </div>
 
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        {loading && <div style={{ background: "white", padding: "20px", borderRadius: "12px", textAlign: "center", color: "#6B7280" }}>📍 Getting your location...</div>}
+        {loading && (
+          <div style={{ background: "white", padding: "24px", borderRadius: "16px", textAlign: "center", color: "#6B7280", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+            <div style={{ fontSize: "18px", marginBottom: "8px" }}>📍 Fetching Live Location</div>
+            <div style={{ fontSize: "13px" }}>Please allow location permission</div>
+          </div>
+        )}
+
+        {locationError && (
+          <div style={{ background: "#FEE2E2", padding: "16px", borderRadius: "16px", textAlign: "center", color: "#B91C1C", fontWeight: "600" }}>
+            ⚠️ Location access denied. Please enable GPS permission.
+          </div>
+        )}
 
         {contacts.length === 0 ? (
           <div style={{ background: "white", padding: "40px", borderRadius: "24px", textAlign: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.06)" }}>
@@ -89,6 +154,73 @@ function EmergencySMS() {
           </div>
         )}
 
+        {contacts.length > 0 && position && (
+          <div style={{ marginTop: "30px", textAlign: "center" }}>
+            <button
+              onClick={() => setSendingAll(true)}
+              style={{
+                background: "linear-gradient(135deg, #E11D48, #BE123C)",
+                color: "white",
+                padding: "16px 32px",
+                border: "none",
+                borderRadius: "50px",
+                fontSize: "16px",
+                fontWeight: "800",
+                cursor: "pointer",
+                boxShadow: "0 10px 30px rgba(225, 29, 72, 0.4)",
+                letterSpacing: "1px"
+              }}
+            >
+              🚨 SEND TO ALL CONTACTS
+            </button>
+          </div>
+        )}
+
+        {sendingAll && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            color: "white",
+            flexDirection: "column"
+          }}>
+            <h1 style={{ fontSize: "60px", margin: 0 }}>{countdown}</h1>
+            <p style={{ marginTop: "10px", fontSize: "18px" }}>Sending emergency alert...</p>
+            <button
+              onClick={() => { setSendingAll(false); setCountdown(5); }}
+              style={{
+                marginTop: "20px",
+                padding: "10px 20px",
+                borderRadius: "10px",
+                border: "none",
+                background: "#E5E7EB",
+                cursor: "pointer",
+                fontWeight: "600"
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {statusMessage && (
+          <div style={{
+            marginTop: "20px",
+            background: "#D1FAE5",
+            padding: "14px",
+            borderRadius: "12px",
+            textAlign: "center",
+            color: "#065F46",
+            fontWeight: "600"
+          }}>
+            {statusMessage}
+          </div>
+        )}
+
         {/* MODAL */}
         {showModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -100,12 +232,32 @@ function EmergencySMS() {
               {position && <div style={{ background: "#EFF2FF", padding: "12px", borderRadius: "10px", fontSize: "12px", color: "#6B7280", marginBottom: "20px" }}>📍 Location: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}</div>}
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "10px", background: "#E5E7EB", color: "#111827", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "pointer" }}>Cancel</button>
-                <button onClick={performAction} style={{ flex: 1, padding: "10px", background: "linear-gradient(135deg, #5B2EFF, #7C5CFF)", color: "white", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "pointer" }}>Confirm</button>
+                <button
+                  onClick={performAction}
+                  disabled={!position}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    background: position ? "linear-gradient(135deg, #5B2EFF, #7C5CFF)" : "#D1D5DB",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "10px",
+                    fontWeight: "600",
+                    cursor: position ? "pointer" : "not-allowed"
+                  }}
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           </div>
         )}
       </div>
+      <audio
+        ref={alertAudioRef}
+        src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+        preload="auto"
+      />
     </div>
   );
 }
