@@ -122,6 +122,9 @@ function WalkMode() {
   const stopWalk = () => {
     setWalking(false);
     setTimer(maxTime);
+    setDistance(0);
+    setGuardianLink(null);
+    setPosition(null);
 
     if (watchRef.current) {
       navigator.geolocation.clearWatch(watchRef.current);
